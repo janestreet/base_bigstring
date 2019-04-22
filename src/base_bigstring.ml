@@ -1,27 +1,34 @@
 open! Base
 
 module Bigstring0 = struct
-  type t = (char, Stdlib.Bigarray.int8_unsigned_elt, Stdlib.Bigarray.c_layout) Stdlib.Bigarray.Array1.t
+  type t =
+    ( char
+    , Stdlib.Bigarray.int8_unsigned_elt
+    , Stdlib.Bigarray.c_layout )
+      Stdlib.Bigarray.Array1.t
 end
 
 module Array1 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Stdlib.Bigarray.Array1.t
-  external get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
-  external set: ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_set_1"
-  external unsafe_get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
-  external unsafe_set: ('a, 'b, 'c) t -> int -> 'a -> unit
-    = "%caml_ba_unsafe_set_1"
 
-  external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
+  external get : ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
+  external set : ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_set_1"
+  external unsafe_get : ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
+  external unsafe_set : ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_unsafe_set_1"
+  external dim : ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
 end
 
 include Bigstring0
 
-external aux_create : max_mem_waiting_gc_in_bytes:int -> size:int -> t = "bigstring_alloc"
+external aux_create
+  :  max_mem_waiting_gc_in_bytes:int
+  -> size:int
+  -> t
+  = "bigstring_alloc"
 
 let sprintf = Printf.sprintf
 
-(* One need to use [Caml.Sys.word_size] so that its value is known at compile time *)
+(* One needs to use [Caml.Sys.word_size] so that its value is known at compile-time. *)
 let arch_sixtyfour = Caml.Sys.word_size = 64
 let arch_big_endian = Caml.Sys.big_endian
 let not_on_32bit = Caml.Sys.word_size > 32
@@ -72,7 +79,7 @@ external unsafe_blit
   -> unit
   = "bigstring_blit_stub"
 
-(* Exposing the external version of get/set supports better inlining *)
+(* Exposing the external version of get/set supports better inlining. *)
 external get : t -> int -> char = "%caml_ba_ref_1"
 external set : t -> int -> char -> unit = "%caml_ba_set_1"
 
@@ -90,15 +97,15 @@ module Bytes_sequence = struct
   let length = Bytes.length
 end
 
-include Blit.Make
-    (struct
-      include Bigstring_sequence
+include Blit.Make (struct
+    include Bigstring_sequence
 
-      let unsafe_blit = unsafe_blit
-    end)
+    let unsafe_blit = unsafe_blit
+  end)
 
 module From_bytes =
-  Blit.Make_distinct (Bytes_sequence)
+  Blit.Make_distinct
+    (Bytes_sequence)
     (struct
       external unsafe_blit
         :  src:bytes
@@ -114,7 +121,8 @@ module From_bytes =
     end)
 
 module To_bytes =
-  Blit.Make_distinct (Bigstring_sequence)
+  Blit.Make_distinct
+    (Bigstring_sequence)
     (struct
       external unsafe_blit
         :  src:t
@@ -158,11 +166,13 @@ let of_string = From_string.subo
 let of_bytes = From_bytes.subo
 let to_string = To_string.subo
 let to_bytes = To_bytes.subo
-
 let sexp_of_t t = Sexp.Atom (to_string t)
+
 let t_of_sexp : Sexp.t -> t = function
   | Atom str -> of_string str
-  | List _ as sexp -> Sexplib0.Sexp_conv.of_sexp_error "bigstring_of_sexp: atom needed" sexp
+  | List _ as sexp ->
+    Sexplib0.Sexp_conv.of_sexp_error "bigstring_of_sexp: atom needed" sexp
+;;
 
 let concat =
   let append ~src ~dst ~dst_pos_ref =
@@ -587,7 +597,7 @@ let uint64_conv_error () =
   failwith "unsafe_read_uint64: value cannot be represented unboxed!"
 ;;
 
-(* [Poly] is required so that we can compare unboxed int64 *)
+(* [Poly] is required so that we can compare unboxed [int64]. *)
 let int64_to_int_exn n =
   if arch_sixtyfour
   then
@@ -639,7 +649,7 @@ let set_uint64_le t ~pos n =
 let unsafe_set_uint8 (t : t) ~pos n = Array1.unsafe_set t pos (Char.unsafe_of_int n)
 
 let unsafe_set_int8 (t : t) ~pos n =
-  (* in all the set functions where there are these tests, it looks like the test could be
+  (* In all the set functions where there are these tests, it looks like the test could be
      removed, since they are only changing the values of the bytes that are not
      written. *)
   let n = if n < 0 then n + 256 else n in

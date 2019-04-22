@@ -10,7 +10,8 @@ open Stdlib.Bigarray
 (** Type of bigstrings *)
 type t = (char, int8_unsigned_elt, c_layout) Array1.t [@@deriving compare, sexp]
 
-(** Type of bigstrings which support hashing. Note that mutation invalidates previous hashes. *)
+(** Type of bigstrings which support hashing. Note that mutation invalidates previous
+    hashes. *)
 type t_frozen = t [@@deriving compare, hash, sexp]
 
 include Equal.S with type t := t
@@ -25,7 +26,7 @@ include Equal.S with type t := t
     Content is undefined. *)
 val create : ?max_mem_waiting_gc_in_bytes:int -> int -> t
 
-(** [init n ~f] creates a bigstring [t] of length [n], with [t.{i} = f i] *)
+(** [init n ~f] creates a bigstring [t] of length [n], with [t.{i} = f i]. *)
 val init : int -> f:(int -> char) -> t
 
 (** [of_string ?pos ?len str] @return a new bigstring that is equivalent
@@ -119,13 +120,13 @@ module From_string : Blit.S_distinct with type src := string with type dst := t
 module To_bytes : Blit.S_distinct with type src := t with type dst := bytes
 module From_bytes : Blit.S_distinct with type src := bytes with type dst := t
 
-(** [memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)] *)
+(** [memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)]. *)
 val memset : t -> pos:int -> len:int -> char -> unit
 
 (** Memcmp *)
 
 (** [memcmp t1 ~pos1 t2 ~pos2 ~len] is like [compare t1 t2] except performs the comparison
-    on the subregions of [t1] and [t2] defined by [pos1], [pos2], and [len] *)
+    on the subregions of [t1] and [t2] defined by [pos1], [pos2], and [len]. *)
 val memcmp : t -> pos1:int -> t -> pos2:int -> len:int -> int
 
 
@@ -274,4 +275,3 @@ val unsafe_set_int64_t_be : t -> pos:int -> Int64.t -> unit
 module Private : sig
   val sign_extend_16 : int -> int
 end
-

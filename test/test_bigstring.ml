@@ -25,17 +25,13 @@ module Blit_elt = struct
   let of_bool b = if b then 'a' else 'b'
 end
 
-include Base_for_tests.Test_blit.Test(Blit_elt)(Bigstring_sequence)(Base_bigstring)
+include Base_for_tests.Test_blit.Test (Blit_elt) (Bigstring_sequence) (Base_bigstring)
 
-include Base_for_tests.Test_blit.Test_distinct
-    (Blit_elt)
-    (Bytes_sequence)
+include Base_for_tests.Test_blit.Test_distinct (Blit_elt) (Bytes_sequence)
     (Bigstring_sequence)
     (Base_bigstring.From_bytes)
 
-include Base_for_tests.Test_blit.Test_distinct
-    (Blit_elt)
-    (Bigstring_sequence)
+include Base_for_tests.Test_blit.Test_distinct (Blit_elt) (Bigstring_sequence)
     (Bytes_sequence)
     (Base_bigstring.To_bytes)
 
@@ -50,8 +46,7 @@ let%test_unit "roundtrip" =
     let bstr = of_string str in
     [%test_eq: Base_bigstring.t] bstr (of_string (to_string bstr));
     [%test_eq: Base_bigstring.t] bstr (of_bytes (to_bytes bstr));
-    [%test_eq: Base_bigstring.t] bstr (t_of_sexp (sexp_of_t bstr));
-  )
+    [%test_eq: Base_bigstring.t] bstr (t_of_sexp (sexp_of_t bstr)))
+;;
 
-let%test "bigstring created with create are not mmapped" =
-  not (is_mmapped (create 2))
+let%test "bigstring created with create are not mmapped" = not (is_mmapped (create 2))
