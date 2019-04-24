@@ -206,7 +206,7 @@ let concat =
 
 external unsafe_memset
   :  t
-    -> pos:int
+  -> pos:int
   -> len:int
   -> char
   -> unit
@@ -222,7 +222,7 @@ let memset t ~pos ~len c =
 
 external unsafe_memcmp
   :  t
-    -> pos1:int
+  -> pos1:int
   -> t
   -> pos2:int
   -> len:int
@@ -250,8 +250,8 @@ let compare t1 t2 =
 
 external internalhash_fold_bigstring
   :  Hash.state
-    -> t
-    -> Hash.state
+  -> t
+  -> Hash.state
   = "internalhash_fold_bigstring"
 [@@noalloc]
 
