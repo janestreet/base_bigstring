@@ -315,9 +315,7 @@ let get_64 (t : t) (pos : int) : int64 =
   unsafe_get_64 t pos
 ;;
 
-(* Assumes [v] is a valid 16-bit integer, because all call sites check this before
-   performing any operations on [t]. *)
-let set_16 (t : t) (pos : int) (v : int) : unit =
+let set_16_trunc (t : t) (pos : int) (v : int) : unit =
   check_args ~loc:"set_16" ~pos ~len:2 t;
   unsafe_set_16 t pos v
 ;;
@@ -391,15 +389,15 @@ let unsafe_write_int16_swap t ~pos x = unsafe_set_16 t pos (swap16 x)
 let read_int16 t ~pos = sign_extend_16 (get_16 t pos)
 let read_int16_swap t ~pos = sign_extend_16 (swap16 (get_16 t pos))
 
-let write_int16 t ~pos x =
+let write_int16_exn t ~pos x =
   check_valid_int16 x ~loc:"Bigstring.write_int16";
-  set_16 t pos x
+  set_16_trunc t pos x
 ;;
 
-let write_int16_swap t ~pos x =
+let write_int16_swap_exn t ~pos x =
   (* Omit "_swap" from the error message it's bi-endian. *)
   check_valid_int16 x ~loc:"Bigstring.write_int16";
-  set_16 t pos (swap16 x)
+  set_16_trunc t pos (swap16 x)
 ;;
 
 let unsafe_read_uint16 t ~pos = unsafe_get_16 t pos
@@ -409,15 +407,15 @@ let unsafe_write_uint16_swap t ~pos x = unsafe_set_16 t pos (swap16 x)
 let read_uint16 t ~pos = get_16 t pos
 let read_uint16_swap t ~pos = swap16 (get_16 t pos)
 
-let write_uint16 t ~pos x =
+let write_uint16_exn t ~pos x =
   check_valid_uint16 x ~loc:"Bigstring.write_uint16";
-  set_16 t pos x
+  set_16_trunc t pos x
 ;;
 
-let write_uint16_swap t ~pos x =
+let write_uint16_swap_exn t ~pos x =
   (* Omit "_swap" from the error message it's bi-endian. *)
   check_valid_uint16 x ~loc:"Bigstring.write_uint16";
-  set_16 t pos (swap16 x)
+  set_16_trunc t pos (swap16 x)
 ;;
 
 let unsafe_read_int32_int t ~pos = int32_to_int (unsafe_get_32 t pos)
@@ -435,12 +433,12 @@ let read_int32_swap t ~pos = swap32 (get_32 t pos)
 let write_int32 t ~pos x = set_32 t pos x
 let write_int32_swap t ~pos x = set_32 t pos (swap32 x)
 
-let write_int32_int t ~pos x =
+let write_int32_int_exn t ~pos x =
   check_valid_int32 x ~loc:"Bigstring.write_int32_int";
   set_32 t pos (int32_of_int x)
 ;;
 
-let write_int32_int_swap t ~pos x =
+let write_int32_int_swap_exn t ~pos x =
   (* Omit "_swap" from the error message it's bi-endian. *)
   check_valid_int32 x ~loc:"Bigstring.write_int32_int";
   set_32 t pos (swap32 (int32_of_int x))
@@ -500,10 +498,16 @@ let unsafe_set_uint16_le =
   if arch_big_endian then unsafe_write_uint16_swap else unsafe_write_uint16
 ;;
 
-let set_int16_be = if arch_big_endian then write_int16 else write_int16_swap
-let set_int16_le = if arch_big_endian then write_int16_swap else write_int16
-let set_uint16_be = if arch_big_endian then write_uint16 else write_uint16_swap
-let set_uint16_le = if arch_big_endian then write_uint16_swap else write_uint16
+let set_int16_be_exn = if arch_big_endian then write_int16_exn else write_int16_swap_exn
+let set_int16_le_exn = if arch_big_endian then write_int16_swap_exn else write_int16_exn
+
+let set_uint16_be_exn =
+  if arch_big_endian then write_uint16_exn else write_uint16_swap_exn
+;;
+
+let set_uint16_le_exn =
+  if arch_big_endian then write_uint16_swap_exn else write_uint16_exn
+;;
 
 let unsafe_get_int32_t_be =
   if arch_big_endian then unsafe_read_int32 else unsafe_read_int32_swap
@@ -544,8 +548,14 @@ let unsafe_set_int32_le =
 
 let get_int32_be = if arch_big_endian then read_int32_int else read_int32_int_swap
 let get_int32_le = if arch_big_endian then read_int32_int_swap else read_int32_int
-let set_int32_be = if arch_big_endian then write_int32_int else write_int32_int_swap
-let set_int32_le = if arch_big_endian then write_int32_int_swap else write_int32_int
+
+let set_int32_be_exn =
+  if arch_big_endian then write_int32_int_exn else write_int32_int_swap_exn
+;;
+
+let set_int32_le_exn =
+  if arch_big_endian then write_int32_int_swap_exn else write_int32_int_exn
+;;
 
 let unsafe_get_int64_be_trunc =
   if arch_big_endian then unsafe_read_int64_int else unsafe_read_int64_int_swap
@@ -631,13 +641,13 @@ let get_uint64_le_exn t ~pos = uint64_to_int_exn (get_int64_t_le t ~pos)
 let unsafe_set_uint64_be = unsafe_set_int64_be
 let unsafe_set_uint64_le = unsafe_set_int64_le
 
-let set_uint64_be t ~pos n =
-  check_valid_uint64 ~loc:"Bigstring.set_uint64_be" n;
+let set_uint64_be_exn t ~pos n =
+  check_valid_uint64 ~loc:"Bigstring.set_uint64_be_exn" n;
   set_int64_be t ~pos n
 ;;
 
-let set_uint64_le t ~pos n =
-  check_valid_uint64 ~loc:"Bigstring.set_uint64_le" n;
+let set_uint64_le_exn t ~pos n =
+  check_valid_uint64 ~loc:"Bigstring.set_uint64_le_exn" n;
   set_int64_le t ~pos n
 ;;
 
@@ -663,13 +673,13 @@ let unsafe_get_int8 (t : t) ~pos =
   if n >= 128 then n - 256 else n
 ;;
 
-let set_uint8 (t : t) ~pos n =
-  check_valid_uint8 ~loc:"Bigstring.set_uint8" n;
+let set_uint8_exn (t : t) ~pos n =
+  check_valid_uint8 ~loc:"Bigstring.set_uint8_exn" n;
   Array1.set t pos (Char.unsafe_of_int n)
 ;;
 
-let set_int8 (t : t) ~pos n =
-  check_valid_int8 ~loc:"Bigstring.set_int8" n;
+let set_int8_exn (t : t) ~pos n =
+  check_valid_int8 ~loc:"Bigstring.set_int8_exn" n;
   let n = if n < 0 then n + 256 else n in
   Array1.set t pos (Char.unsafe_of_int n)
 ;;
@@ -701,16 +711,16 @@ let unsafe_get_uint32_be t ~pos =
   if not_on_32bit && n < 0 then n + (1 lsl 32) else n
 ;;
 
-let set_uint32_le t ~pos n =
-  check_valid_uint32 ~loc:"Bigstring.set_uint32_le" n;
+let set_uint32_le_exn t ~pos n =
+  check_valid_uint32 ~loc:"Bigstring.set_uint32_le_exn" n;
   let n = if not_on_32bit && n >= 1 lsl 31 then n - (1 lsl 32) else n in
-  set_int32_le t ~pos n
+  set_int32_le_exn t ~pos n
 ;;
 
-let set_uint32_be t ~pos n =
-  check_valid_uint32 ~loc:"Bigstring.set_uint32_be" n;
+let set_uint32_be_exn t ~pos n =
+  check_valid_uint32 ~loc:"Bigstring.set_uint32_be_exn" n;
   let n = if not_on_32bit && n >= 1 lsl 31 then n - (1 lsl 32) else n in
-  set_int32_be t ~pos n
+  set_int32_be_exn t ~pos n
 ;;
 
 let get_uint32_le t ~pos =

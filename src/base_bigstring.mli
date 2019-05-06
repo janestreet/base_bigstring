@@ -145,17 +145,17 @@ external unsafe_find : t -> char -> pos:int -> len:int -> int = "bigstring_find"
 [@@noalloc]
 
 
-(** {2 Accessors for parsing binary values, analogous to binary_packing}
+(** {2 Accessors for parsing binary values, analogous to [Binary_packing]}
 
-    These are in Bigstring rather than a separate module because:
+    These are in [Bigstring] rather than a separate module because:
 
-    1) Existing binary_packing requires copies and does not work with bigstrings
-    2) The accessors rely on the implementation of bigstring, and hence should
-    change should the implementation of bigstring move away from Bigarray.
-    3) Bigstring already has some external C functions, so it didn't require many
-    changes to the OMakefile ^_^.
+    1. Existing [Binary_packing] requires copies and does not work with [bigstring]s.
+    2. The accessors rely on the implementation of [bigstring], and hence should change
+    should the implementation of [bigstring] move away from [Bigarray].
+    3. [Bigstring] already has some external C functions, so it didn't require many
+    changes to the [jbuild] ^_^.
 
-    In a departure from Binary_packing, the naming conventions are chosen to be close to
+    In a departure from [Binary_packing], the naming conventions are chosen to be close to
     C99 stdint types, as it's a more standard description and it is somewhat useful in
     making compact macros for the implementations.  The accessor names contain endian-ness
     to allow for branch-free implementations
@@ -166,12 +166,13 @@ external unsafe_find : t -> char -> pos:int -> len:int -> int = "bigstring_find"
     <type>      ::= int8 | uint8 | int16 | uint16 | int32 | uint32 | int64 | uint64
     <endian>    ::= _le | _be | ''
 
-    The "unsafe_" prefix indicates that these functions do no bounds checking. *)
+    The [unsafe_] prefix indicates that these functions do no bounds checking and silently
+    truncate out-of-range numeric arguments. *)
 
 val get_int8 : t -> pos:int -> int
-val set_int8 : t -> pos:int -> int -> unit
+val set_int8_exn : t -> pos:int -> int -> unit
 val get_uint8 : t -> pos:int -> int
-val set_uint8 : t -> pos:int -> int -> unit
+val set_uint8_exn : t -> pos:int -> int -> unit
 val unsafe_get_int8 : t -> pos:int -> int
 val unsafe_set_int8 : t -> pos:int -> int -> unit
 val unsafe_get_uint8 : t -> pos:int -> int
@@ -181,16 +182,16 @@ val unsafe_set_uint8 : t -> pos:int -> int -> unit
 
 val get_int16_le : t -> pos:int -> int
 val get_int16_be : t -> pos:int -> int
-val set_int16_le : t -> pos:int -> int -> unit
-val set_int16_be : t -> pos:int -> int -> unit
+val set_int16_le_exn : t -> pos:int -> int -> unit
+val set_int16_be_exn : t -> pos:int -> int -> unit
 val unsafe_get_int16_le : t -> pos:int -> int
 val unsafe_get_int16_be : t -> pos:int -> int
 val unsafe_set_int16_le : t -> pos:int -> int -> unit
 val unsafe_set_int16_be : t -> pos:int -> int -> unit
 val get_uint16_le : t -> pos:int -> int
 val get_uint16_be : t -> pos:int -> int
-val set_uint16_le : t -> pos:int -> int -> unit
-val set_uint16_be : t -> pos:int -> int -> unit
+val set_uint16_le_exn : t -> pos:int -> int -> unit
+val set_uint16_be_exn : t -> pos:int -> int -> unit
 val unsafe_get_uint16_le : t -> pos:int -> int
 val unsafe_get_uint16_be : t -> pos:int -> int
 val unsafe_set_uint16_le : t -> pos:int -> int -> unit
@@ -200,16 +201,16 @@ val unsafe_set_uint16_be : t -> pos:int -> int -> unit
 
 val get_int32_le : t -> pos:int -> int
 val get_int32_be : t -> pos:int -> int
-val set_int32_le : t -> pos:int -> int -> unit
-val set_int32_be : t -> pos:int -> int -> unit
+val set_int32_le_exn : t -> pos:int -> int -> unit
+val set_int32_be_exn : t -> pos:int -> int -> unit
 val unsafe_get_int32_le : t -> pos:int -> int
 val unsafe_get_int32_be : t -> pos:int -> int
 val unsafe_set_int32_le : t -> pos:int -> int -> unit
 val unsafe_set_int32_be : t -> pos:int -> int -> unit
 val get_uint32_le : t -> pos:int -> int
 val get_uint32_be : t -> pos:int -> int
-val set_uint32_le : t -> pos:int -> int -> unit
-val set_uint32_be : t -> pos:int -> int -> unit
+val set_uint32_le_exn : t -> pos:int -> int -> unit
+val set_uint32_be_exn : t -> pos:int -> int -> unit
 val unsafe_get_uint32_le : t -> pos:int -> int
 val unsafe_get_uint32_be : t -> pos:int -> int
 val unsafe_set_uint32_le : t -> pos:int -> int -> unit
@@ -240,8 +241,8 @@ val unsafe_set_int64_be : t -> pos:int -> int -> unit
 
 val get_uint64_be_exn : t -> pos:int -> int
 val get_uint64_le_exn : t -> pos:int -> int
-val set_uint64_le : t -> pos:int -> int -> unit
-val set_uint64_be : t -> pos:int -> int -> unit
+val set_uint64_le_exn : t -> pos:int -> int -> unit
+val set_uint64_be_exn : t -> pos:int -> int -> unit
 val unsafe_get_uint64_be_exn : t -> pos:int -> int
 val unsafe_get_uint64_le_exn : t -> pos:int -> int
 val unsafe_set_uint64_le : t -> pos:int -> int -> unit
