@@ -1,1 +1,1 @@
-(*_ This signature is deliberately empty. *)
+include module type of Base_bigstring
