@@ -525,9 +525,9 @@ let%expect_test "basic char getters" =
 let check_args = check_args
 
 let%expect_test "basic check_args" =
-  (if false then require_does_raise [%here] else fun f -> f ()) (fun () ->
+  require_does_raise [%here] (fun () ->
     check_args ~loc:"LOC" ~pos:Int.max_value ~len:2 (of_string "abc"));
-  [%expect {| |}];
+  [%expect {| (Invalid_argument "Bigstring.LOC: length(bstr) < pos + len") |}];
   check_args ~loc:"LOC" ~pos:0 ~len:0 (of_string "");
   require_does_raise [%here] (fun () ->
     check_args ~loc:"LOC" ~pos:1 ~len:0 (of_string ""));

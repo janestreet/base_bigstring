@@ -59,7 +59,9 @@ let check_args ~loc ~pos ~len (bstr : t) =
   if pos < 0 then invalid_arg (loc ^ ": pos < 0");
   if len < 0 then invalid_arg (loc ^ ": len < 0");
   let bstr_len = length bstr in
-  if bstr_len < pos + len
+  (* Be careful with overflow!  We could have bogons like [pos = Int.max_value] or [len =
+     Int.max_value] passed by the user. *)
+  if bstr_len - pos < len
   then invalid_arg (sprintf "Bigstring.%s: length(bstr) < pos + len" loc)
 ;;
 
