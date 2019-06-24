@@ -109,7 +109,8 @@ let set_uint64_be_exn = set_uint64_be_exn
 let%expect_test "checking setters (should end in [_exn])" =
   let test setters z =
     try_setters z setters
-    |> List.iteri ~f:(fun i -> function
+    |> List.iteri ~f:(fun i ->
+      function
       | Ok bytes ->
         raise_s [%message "didn't raise" (z : Int.Hex.t) (i : int) (bytes : int list)]
       | Error _ -> ())
@@ -182,7 +183,6 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
         [ 0x81 (* positive if top bit truncated *)
         ; 0xc1
           (* negative if top bit truncated *)
-
         ]
         ~f:(fun first_byte ->
           let i = getter (getter_t ~first_byte) ~pos:0 in
@@ -280,7 +280,8 @@ let try_getters ~first_bigstring_byte =
 let%expect_test "checking getters (should end in [_exn])" =
   let test getters ~first_bigstring_byte =
     try_getters getters ~first_bigstring_byte
-    |> List.iteri ~f:(fun i -> function
+    |> List.iteri ~f:(fun i ->
+      function
       | Ok z -> raise_s [%message "didn't raise" (i : int) (z : Int.Hex.t)]
       | Error _ -> ())
   in

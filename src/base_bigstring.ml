@@ -50,7 +50,7 @@ external is_mmapped : t -> bool = "bigstring_is_mmapped_stub" [@@noalloc]
 let init n ~f =
   let t = create n in
   for i = 0 to n - 1 do
-    t.{i} <- (f i)
+    t.{i} <- f i
   done;
   t
 ;;
@@ -140,11 +140,12 @@ module To_bytes =
     end)
 
 module From_string =
-  Blit.Make_distinct (struct
-    type t = string
+  Blit.Make_distinct
+    (struct
+      type t = string
 
-    let length = String.length
-  end)
+      let length = String.length
+    end)
     (struct
       external unsafe_blit
         :  src:string

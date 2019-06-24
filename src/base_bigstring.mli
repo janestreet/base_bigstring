@@ -7,6 +7,7 @@ open Stdlib.Bigarray
 
 (** {2 Types and exceptions} *)
 
+
 (** Type of bigstrings *)
 type t = (char, int8_unsigned_elt, c_layout) Array1.t [@@deriving compare, sexp]
 
@@ -28,6 +29,7 @@ val create : ?max_mem_waiting_gc_in_bytes:int -> int -> t
 
 (** [init n ~f] creates a bigstring [t] of length [n], with [t.{i} = f i]. *)
 val init : int -> f:(int -> char) -> t
+
 
 (** [of_string ?pos ?len str] @return a new bigstring that is equivalent
     to the substring of length [len] in [str] starting at position [pos].
