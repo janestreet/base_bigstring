@@ -80,6 +80,7 @@ external unsafe_blit
   -> len:int
   -> unit
   = "bigstring_blit_stub"
+[@@noalloc]
 
 (* Exposing the external version of get/set supports better inlining. *)
 external get : t -> int -> char = "%caml_ba_ref_1"
@@ -176,6 +177,8 @@ let t_of_sexp : Sexp.t -> t = function
   | List _ as sexp ->
     Sexplib0.Sexp_conv.of_sexp_error "bigstring_of_sexp: atom needed" sexp
 ;;
+
+let copy t : t = sub t ~pos:0 ~len:(length t)
 
 let concat =
   let append ~src ~dst ~dst_pos_ref =

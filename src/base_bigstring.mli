@@ -105,6 +105,8 @@ external is_mmapped : t -> bool = "bigstring_is_mmapped_stub"
 
 include Blit.S with type t := t
 
+val copy : t -> t
+
 module To_string : sig
   val blit : (t, bytes) Blit.blit
   [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blit] instead"]

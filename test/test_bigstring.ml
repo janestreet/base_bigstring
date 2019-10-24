@@ -46,6 +46,18 @@ include Base_for_tests.Test_blit.Test_distinct (Blit_elt) (Bigstring_sequence)
 module From_string = From_string
 module To_string = To_string
 
+let copy = copy
+
+let%test_unit "copy" =
+  let equal a b = String.equal (to_string a) (to_string b) in
+  let a = create 1 in
+  set a 0 'a';
+  let b = copy a in
+  assert (equal a b);
+  set b 0 'b';
+  assert (not (equal a b))
+;;
+
 (* The above are produced by simple [Blit] functor applications, so just smoke-test the
    [unsafe_blit] functions we pass to the functors. *)
 let%expect_test "basic unsafe_blits" =
