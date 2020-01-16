@@ -18,9 +18,9 @@ function bigstring_blit_stub(s1, i1, s2, i2, len){
 }
 
 //Provides: bigstring_blit_bytes_bigstring_stub
-//Requires: caml_bigstring_blit_string_to_ba
+//Requires: caml_bigstring_blit_bytes_to_ba
 function bigstring_blit_bytes_bigstring_stub(src, src_pos, dst, dst_pos, len){
-  return caml_bigstring_blit_string_to_ba(src,src_pos,dst,dst_pos,len);
+  return caml_bigstring_blit_bytes_to_ba(src,src_pos,dst,dst_pos,len);
 }
 
 //Provides: bigstring_blit_bigstring_bytes_stub
