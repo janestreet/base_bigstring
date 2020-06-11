@@ -450,18 +450,29 @@ let write_int32_int_swap_exn t ~pos x =
   set_32 t pos (swap32 (int32_of_int x))
 ;;
 
-let unsafe_read_int64_int t ~pos = int64_to_int (unsafe_get_64 t pos)
-let unsafe_read_int64_int_swap t ~pos = int64_to_int (swap64 (unsafe_get_64 t pos))
-let unsafe_read_int64 t ~pos = unsafe_get_64 t pos
-let unsafe_read_int64_swap t ~pos = swap64 (unsafe_get_64 t pos)
-let unsafe_write_int64 t ~pos x = unsafe_set_64 t pos x
-let unsafe_write_int64_swap t ~pos x = unsafe_set_64 t pos (swap64 x)
-let unsafe_write_int64_int t ~pos x = unsafe_set_64 t pos (int64_of_int x)
-let unsafe_write_int64_int_swap t ~pos x = unsafe_set_64 t pos (swap64 (int64_of_int x))
-let read_int64_int t ~pos = int64_to_int (get_64 t pos)
-let read_int64_int_swap t ~pos = int64_to_int (swap64 (get_64 t pos))
-let read_int64 t ~pos = get_64 t pos
-let read_int64_swap t ~pos = swap64 (get_64 t pos)
+let[@inline always] unsafe_read_int64_int t ~pos = int64_to_int (unsafe_get_64 t pos)
+
+let[@inline always] unsafe_read_int64_int_swap t ~pos =
+  int64_to_int (swap64 (unsafe_get_64 t pos))
+;;
+
+let[@inline always] unsafe_read_int64 t ~pos = unsafe_get_64 t pos
+let[@inline always] unsafe_read_int64_swap t ~pos = swap64 (unsafe_get_64 t pos)
+let[@inline always] unsafe_write_int64 t ~pos x = unsafe_set_64 t pos x
+let[@inline always] unsafe_write_int64_swap t ~pos x = unsafe_set_64 t pos (swap64 x)
+
+let[@inline always] unsafe_write_int64_int t ~pos x =
+  unsafe_set_64 t pos (int64_of_int x)
+;;
+
+let[@inline always] unsafe_write_int64_int_swap t ~pos x =
+  unsafe_set_64 t pos (swap64 (int64_of_int x))
+;;
+
+let[@inline always] read_int64_int t ~pos = int64_to_int (get_64 t pos)
+let[@inline always] read_int64_int_swap t ~pos = int64_to_int (swap64 (get_64 t pos))
+let[@inline always] read_int64 t ~pos = get_64 t pos
+let[@inline always] read_int64_swap t ~pos = swap64 (get_64 t pos)
 let write_int64 t ~pos x = set_64 t pos x
 let write_int64_swap t ~pos x = set_64 t pos (swap64 x)
 let write_int64_int t ~pos x = set_64 t pos (int64_of_int x)
@@ -614,7 +625,7 @@ let uint64_conv_error () =
 ;;
 
 (* [Poly] is required so that we can compare unboxed [int64]. *)
-let int64_to_int_exn n =
+let[@inline always] int64_to_int_exn n =
   if arch_sixtyfour
   then
     if Poly.(n >= -0x4000_0000_0000_0000L && n < 0x4000_0000_0000_0000L)
@@ -625,7 +636,7 @@ let int64_to_int_exn n =
   else int64_conv_error ()
 ;;
 
-let uint64_to_int_exn n =
+let[@inline always] uint64_to_int_exn n =
   if arch_sixtyfour
   then
     if Poly.(n >= 0L && n < 0x4000_0000_0000_0000L)
