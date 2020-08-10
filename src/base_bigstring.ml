@@ -20,11 +20,7 @@ end
 
 include Bigstring0
 
-external aux_create
-  :  max_mem_waiting_gc_in_bytes:int
-  -> size:int
-  -> t
-  = "bigstring_alloc"
+external aux_create : max_mem_waiting_gc_in_bytes:int -> size:int -> t = "bigstring_alloc"
 
 let sprintf = Printf.sprintf
 
@@ -210,13 +206,7 @@ let concat =
       dst
 ;;
 
-external unsafe_memset
-  :  t
-  -> pos:int
-  -> len:int
-  -> char
-  -> unit
-  = "bigstring_memset_stub"
+external unsafe_memset : t -> pos:int -> len:int -> char -> unit = "bigstring_memset_stub"
 [@@noalloc]
 
 let memset t ~pos ~len c =
@@ -460,10 +450,7 @@ let[@inline always] unsafe_read_int64 t ~pos = unsafe_get_64 t pos
 let[@inline always] unsafe_read_int64_swap t ~pos = swap64 (unsafe_get_64 t pos)
 let[@inline always] unsafe_write_int64 t ~pos x = unsafe_set_64 t pos x
 let[@inline always] unsafe_write_int64_swap t ~pos x = unsafe_set_64 t pos (swap64 x)
-
-let[@inline always] unsafe_write_int64_int t ~pos x =
-  unsafe_set_64 t pos (int64_of_int x)
-;;
+let[@inline always] unsafe_write_int64_int t ~pos x = unsafe_set_64 t pos (int64_of_int x)
 
 let[@inline always] unsafe_write_int64_int_swap t ~pos x =
   unsafe_set_64 t pos (swap64 (int64_of_int x))

@@ -121,8 +121,7 @@ let set_uint64_be_exn = set_uint64_be_exn
 let%expect_test "checking setters (should end in [_exn])" =
   let test setters z =
     try_setters z setters
-    |> List.iteri ~f:(fun i ->
-      function
+    |> List.iteri ~f:(fun i -> function
       | Ok bytes ->
         raise_s [%message "didn't raise" (z : Int.Hex.t) (i : int) (bytes : int list)]
       | Error _ -> ())
@@ -228,23 +227,19 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
 
     let%expect_test ("31-bit int"[@tags "32-bits-only", "no-js"]) =
       test get_int64_le_trunc;
-      [%expect
-        {|
+      [%expect {|
           0x4838281 (= 75727489)
           0x44c3c2c1 (= -993803583) |}];
       test get_int64_be_trunc;
-      [%expect
-        {|
+      [%expect {|
           0x5868788 (= 92702600)
           0x45c6c7c8 (= -976828472) |}];
       test unsafe_get_int64_le_trunc;
-      [%expect
-        {|
+      [%expect {|
           0x4838281 (= 75727489)
           0x44c3c2c1 (= -993803583) |}];
       test unsafe_get_int64_be_trunc;
-      [%expect
-        {|
+      [%expect {|
           0x5868788 (= 92702600)
           0x45c6c7c8 (= -976828472) |}]
     ;;
@@ -292,8 +287,7 @@ let try_getters ~first_bigstring_byte =
 let%expect_test "checking getters (should end in [_exn])" =
   let test getters ~first_bigstring_byte =
     try_getters getters ~first_bigstring_byte
-    |> List.iteri ~f:(fun i ->
-      function
+    |> List.iteri ~f:(fun i -> function
       | Ok z -> raise_s [%message "didn't raise" (i : int) (z : Int.Hex.t)]
       | Error _ -> ())
   in
