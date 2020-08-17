@@ -695,25 +695,18 @@ let get_int8 (t : t) ~pos =
   if n >= 128 then n - 256 else n
 ;;
 
-let unsafe_set_uint32_le t ~pos n =
-  let n = if not_on_32bit && n >= 1 lsl 31 then n - (1 lsl 32) else n in
-  unsafe_set_int32_le t ~pos n
+let[@inline always] uint32_of_int32_t n =
+  if not_on_32bit
+  then
+    (* use Caml.Nativeint to ensure inlining even without x-library-inlining *)
+    Caml.Nativeint.(to_int (logand (of_int32 n) 0xffff_ffffn))
+  else int32_to_int n
 ;;
 
-let unsafe_set_uint32_be t ~pos n =
-  let n = if not_on_32bit && n >= 1 lsl 31 then n - (1 lsl 32) else n in
-  unsafe_set_int32_be t ~pos n
-;;
-
-let unsafe_get_uint32_le t ~pos =
-  let n = unsafe_get_int32_le t ~pos in
-  if not_on_32bit && n < 0 then n + (1 lsl 32) else n
-;;
-
-let unsafe_get_uint32_be t ~pos =
-  let n = unsafe_get_int32_be t ~pos in
-  if not_on_32bit && n < 0 then n + (1 lsl 32) else n
-;;
+let unsafe_set_uint32_le t ~pos n = unsafe_set_int32_t_le t ~pos (int32_of_int n)
+let unsafe_set_uint32_be t ~pos n = unsafe_set_int32_t_be t ~pos (int32_of_int n)
+let unsafe_get_uint32_le t ~pos = uint32_of_int32_t (unsafe_get_int32_t_le t ~pos)
+let unsafe_get_uint32_be t ~pos = uint32_of_int32_t (unsafe_get_int32_t_be t ~pos)
 
 let set_uint32_le_exn t ~pos n =
   check_valid_uint32 ~loc:"Bigstring.set_uint32_le_exn" n;
@@ -727,15 +720,8 @@ let set_uint32_be_exn t ~pos n =
   set_int32_be_exn t ~pos n
 ;;
 
-let get_uint32_le t ~pos =
-  let n = get_int32_le t ~pos in
-  if not_on_32bit && n < 0 then n + (1 lsl 32) else n
-;;
-
-let get_uint32_be t ~pos =
-  let n = get_int32_be t ~pos in
-  if not_on_32bit && n < 0 then n + (1 lsl 32) else n
-;;
+let get_uint32_le t ~pos = uint32_of_int32_t (get_int32_t_le t ~pos)
+let get_uint32_be t ~pos = uint32_of_int32_t (get_int32_t_be t ~pos)
 
 module Private = struct
   let sign_extend_16 = sign_extend_16
