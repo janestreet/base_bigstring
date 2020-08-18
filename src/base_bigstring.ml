@@ -695,11 +695,13 @@ let get_int8 (t : t) ~pos =
   if n >= 128 then n - 256 else n
 ;;
 
+let mask32_n = Caml.Nativeint.(sub (shift_left 1n 32) 1n)
+
 let[@inline always] uint32_of_int32_t n =
   if not_on_32bit
   then
     (* use Caml.Nativeint to ensure inlining even without x-library-inlining *)
-    Caml.Nativeint.(to_int (logand (of_int32 n) 0xffff_ffffn))
+    Caml.Nativeint.(to_int (logand (of_int32 n) mask32_n))
   else int32_to_int n
 ;;
 
