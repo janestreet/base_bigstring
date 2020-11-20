@@ -7,7 +7,6 @@ open Stdlib.Bigarray
 
 (** {2 Types and exceptions} *)
 
-
 (** Type of bigstrings *)
 type t = (char, int8_unsigned_elt, c_layout) Array1.t [@@deriving compare, sexp]
 
