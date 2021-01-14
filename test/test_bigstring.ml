@@ -497,13 +497,27 @@ let%expect_test "basic get_opt_len" =
 ;;
 
 let memcmp = memcmp
+let memcmp_bytes = memcmp_bytes
 
-let%expect_test "basic memcmp" =
-  let t1 = of_string "221007247563588720" in
-  let t2 = of_string "1650905272620466461" in
-  [%test_result: int] ~expect:0 (memcmp t1 ~pos1:0 t2 ~pos2:0 ~len:0);
-  [%test_pred: int] Int.is_positive (memcmp t1 ~pos1:0 t2 ~pos2:0 ~len:3);
-  [%test_pred: int] Int.is_negative (memcmp t1 ~pos1:0 t2 ~pos2:1 ~len:3)
+let%test_module "basic memcmp" =
+  (module struct
+    let s1 = "221007247563588720"
+    let s2 = "1650905272620466461"
+
+    let test_memcmp ~memcmp t1 t2 =
+      [%test_result: int] ~expect:0 (memcmp t1 ~pos1:0 t2 ~pos2:0 ~len:0);
+      [%test_pred: int] Int.is_positive (memcmp t1 ~pos1:0 t2 ~pos2:0 ~len:3);
+      [%test_pred: int] Int.is_negative (memcmp t1 ~pos1:0 t2 ~pos2:1 ~len:3)
+    ;;
+
+    let%expect_test "bigstring to bigstring" =
+      test_memcmp ~memcmp (of_string s1) (of_string s2)
+    ;;
+
+    let%expect_test "bigstring to bytes" =
+      test_memcmp ~memcmp:memcmp_bytes (of_string s1) (Bytes.of_string s2)
+    ;;
+  end)
 ;;
 
 let memset = memset

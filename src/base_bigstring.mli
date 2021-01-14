@@ -132,6 +132,8 @@ val memset : t -> pos:int -> len:int -> char -> unit
     on the subregions of [t1] and [t2] defined by [pos1], [pos2], and [len]. *)
 val memcmp : t -> pos1:int -> t -> pos2:int -> len:int -> int
 
+(** [memcmp_bytes], for efficient [memcmp] between [Bigstring] and [Bytes] data. *)
+val memcmp_bytes : t -> pos1:int -> Bytes.t -> pos2:int -> len:int -> int
 
 (** {2 Search} *)
 

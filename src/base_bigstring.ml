@@ -232,6 +232,25 @@ let memcmp t1 ~pos1 t2 ~pos2 ~len =
   unsafe_memcmp t1 ~pos1 t2 ~pos2 ~len
 ;;
 
+external unsafe_memcmp_bytes
+  :  t
+  -> pos1:int
+  -> Bytes.t
+  -> pos2:int
+  -> len:int
+  -> int
+  = "bigstring_memcmp_bytes_stub"
+[@@noalloc]
+
+let memcmp_bytes t1 ~pos1 bytes ~pos2 ~len =
+  Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
+  Ordered_collection_common.check_pos_len_exn
+    ~pos:pos2
+    ~len
+    ~total_length:(Bytes.length bytes);
+  unsafe_memcmp_bytes t1 ~pos1 bytes ~pos2 ~len
+;;
+
 let compare t1 t2 =
   if phys_equal t1 t2
   then 0
