@@ -33,14 +33,14 @@ include Blit_s
 include Base_for_tests.Test_blit.Test (Blit_elt) (Bigstring_sequence) (Blit_s)
 module From_bytes = From_bytes
 
-include Base_for_tests.Test_blit.Test_distinct (Blit_elt) (Bytes_sequence)
-    (Bigstring_sequence)
+include
+  Base_for_tests.Test_blit.Test_distinct (Blit_elt) (Bytes_sequence) (Bigstring_sequence)
     (From_bytes)
 
 module To_bytes = To_bytes
 
-include Base_for_tests.Test_blit.Test_distinct (Blit_elt) (Bigstring_sequence)
-    (Bytes_sequence)
+include
+  Base_for_tests.Test_blit.Test_distinct (Blit_elt) (Bigstring_sequence) (Bytes_sequence)
     (To_bytes)
 
 module From_string = From_string
