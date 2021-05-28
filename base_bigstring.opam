@@ -12,6 +12,7 @@ build: [
 depends: [
   "ocaml" {>= "4.08.0"}
   "base"
+  "int_repr"
   "ppx_jane"
   "dune"     {>= "2.0.0"}
 ]

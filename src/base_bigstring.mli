@@ -275,6 +275,16 @@ val unsafe_get_int64_t_be : t -> pos:int -> Int64.t
 val unsafe_set_int64_t_le : t -> pos:int -> Int64.t -> unit
 val unsafe_set_int64_t_be : t -> pos:int -> Int64.t -> unit
 
+module Int_repr : sig
+  include Int_repr.Get with type t := t
+  include Int_repr.Set with type t := t
+
+  module Unsafe : sig
+    include Int_repr.Get with type t := t
+    include Int_repr.Set with type t := t
+  end
+end
+
 (*_ See the Jane Street Style Guide for an explanation of [Private] submodules:
 
   https://opensource.janestreet.com/standards/#private-submodules *)

@@ -614,3 +614,6 @@ let%expect_test "basic equal" =
 
 type nonrec t = t
 type nonrec t_frozen = t_frozen [@@deriving compare, hash, sexp]
+
+(* Effectively tested in lib/int_repr *)
+module Int_repr = Base_bigstring.Int_repr

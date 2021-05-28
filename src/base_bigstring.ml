@@ -744,6 +744,42 @@ let set_uint32_be_exn t ~pos n =
 let get_uint32_le t ~pos = uint32_of_int32_t (get_int32_t_le t ~pos)
 let get_uint32_be t ~pos = uint32_of_int32_t (get_int32_t_be t ~pos)
 
+module Int_repr = struct
+  module F = struct
+    type t = t_frozen
+
+    let get_uint8 t pos = get_uint8 t ~pos
+    let set_uint8 t pos x = Array1.set t pos (Char.unsafe_of_int x)
+    let get_uint16_ne t pos = get_16 t pos
+    let set_uint16_ne t pos x = set_16_trunc t pos x
+    let get_int32_ne t pos = get_32 t pos
+    let set_int32_ne t pos x = set_32 t pos x
+    let get_int64_ne t pos = get_64 t pos
+    let set_int64_ne t pos x = set_64 t pos x
+  end
+
+  include Int_repr.Make_get (F)
+  include Int_repr.Make_set (F)
+
+  module Unsafe = struct
+    module F = struct
+      type t = t_frozen
+
+      let get_uint8 t pos = unsafe_get_uint8 t ~pos
+      let set_uint8 t pos x = unsafe_set_uint8 t ~pos x
+      let get_uint16_ne t pos = unsafe_get_16 t pos
+      let set_uint16_ne t pos x = unsafe_set_16 t pos x
+      let get_int32_ne t pos = unsafe_get_32 t pos
+      let set_int32_ne t pos x = unsafe_set_32 t pos x
+      let get_int64_ne t pos = unsafe_get_64 t pos
+      let set_int64_ne t pos x = unsafe_set_64 t pos x
+    end
+
+    include Int_repr.Make_get (F)
+    include Int_repr.Make_set (F)
+  end
+end
+
 module Private = struct
   let sign_extend_16 = sign_extend_16
 end
