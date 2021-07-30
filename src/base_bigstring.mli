@@ -144,6 +144,7 @@ val memcmp_bytes : t -> pos1:int -> Bytes.t -> pos2:int -> len:int -> int
     @param len default = [length bstr - pos] *)
 val find : ?pos:int -> ?len:int -> char -> t -> int option
 
+
 (** Same as [find], but does no bounds checking, and returns a negative value instead of
     [None] if [char] is not found. *)
 external unsafe_find : t -> char -> pos:int -> len:int -> int = "bigstring_find"
