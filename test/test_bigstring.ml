@@ -173,7 +173,7 @@ let%test_module "truncating setters (should end in [_trunc] or begin with [unsaf
       [%expect {| ff ff ff ff ff ff ff ff ; ff ff ff ff ff ff ff ff ; |}]
     ;;
 
-    let%expect_test (_[@tags "64-bits-only"]) =
+    let%expect_test (_ [@tags "64-bits-only"]) =
       Option.iter (Int64.to_int 0x90_8070_6050L) ~f:(fun z ->
         test [ unsafe_set_int32_le; unsafe_set_int32_be ] z);
       [%expect {| 50 60 70 80 0 0 0 0 ; 80 70 60 50 0 0 0 0 ; |}]
@@ -202,7 +202,7 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
           printf !"0x%x (= %d)\n" i i)
     ;;
 
-    let%expect_test ("63-bit int"[@tags "64-bits-only"]) =
+    let%expect_test ("63-bit int" [@tags "64-bits-only"]) =
       test get_int64_le_trunc;
       [%expect
         {|
@@ -225,7 +225,7 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
           0x41c2c3c4c5c6c7c8 (= -4484807029008447544) |}]
     ;;
 
-    let%expect_test ("31-bit int"[@tags "32-bits-only", "no-js"]) =
+    let%expect_test ("31-bit int" [@tags "32-bits-only", "no-js"]) =
       test get_int64_le_trunc;
       [%expect {|
           0x4838281 (= 75727489)
@@ -244,7 +244,7 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
           0x45c6c7c8 (= -976828472) |}]
     ;;
 
-    let%expect_test ("32-bit int"[@tags "js-only"]) =
+    let%expect_test ("32-bit int" [@tags "js-only"]) =
       test get_int64_le_trunc;
       [%expect
         {|
