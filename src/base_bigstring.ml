@@ -653,12 +653,25 @@ let[@inline always] uint64_to_int_exn n =
   else uint64_conv_error ()
 ;;
 
-let unsafe_get_int64_be_exn t ~pos = int64_to_int_exn (unsafe_get_int64_t_be t ~pos)
-let unsafe_get_int64_le_exn t ~pos = int64_to_int_exn (unsafe_get_int64_t_le t ~pos)
+let[@inline] unsafe_get_int64_be_exn t ~pos =
+  int64_to_int_exn (unsafe_get_int64_t_be t ~pos)
+;;
+
+let[@inline] unsafe_get_int64_le_exn t ~pos =
+  int64_to_int_exn (unsafe_get_int64_t_le t ~pos)
+;;
+
 let get_int64_be_exn t ~pos = int64_to_int_exn (get_int64_t_be t ~pos)
 let get_int64_le_exn t ~pos = int64_to_int_exn (get_int64_t_le t ~pos)
-let unsafe_get_uint64_be_exn t ~pos = uint64_to_int_exn (unsafe_get_int64_t_be t ~pos)
-let unsafe_get_uint64_le_exn t ~pos = uint64_to_int_exn (unsafe_get_int64_t_le t ~pos)
+
+let[@inline] unsafe_get_uint64_be_exn t ~pos =
+  uint64_to_int_exn (unsafe_get_int64_t_be t ~pos)
+;;
+
+let[@inline] unsafe_get_uint64_le_exn t ~pos =
+  uint64_to_int_exn (unsafe_get_int64_t_le t ~pos)
+;;
+
 let get_uint64_be_exn t ~pos = uint64_to_int_exn (get_int64_t_be t ~pos)
 let get_uint64_le_exn t ~pos = uint64_to_int_exn (get_int64_t_le t ~pos)
 let unsafe_set_uint64_be = unsafe_set_int64_be
@@ -724,10 +737,16 @@ let[@inline always] uint32_of_int32_t n =
   else int32_to_int n
 ;;
 
-let unsafe_set_uint32_le t ~pos n = unsafe_set_int32_t_le t ~pos (int32_of_int n)
-let unsafe_set_uint32_be t ~pos n = unsafe_set_int32_t_be t ~pos (int32_of_int n)
-let unsafe_get_uint32_le t ~pos = uint32_of_int32_t (unsafe_get_int32_t_le t ~pos)
-let unsafe_get_uint32_be t ~pos = uint32_of_int32_t (unsafe_get_int32_t_be t ~pos)
+let[@inline] unsafe_set_uint32_le t ~pos n = unsafe_set_int32_t_le t ~pos (int32_of_int n)
+let[@inline] unsafe_set_uint32_be t ~pos n = unsafe_set_int32_t_be t ~pos (int32_of_int n)
+
+let[@inline] unsafe_get_uint32_le t ~pos =
+  uint32_of_int32_t (unsafe_get_int32_t_le t ~pos)
+;;
+
+let[@inline] unsafe_get_uint32_be t ~pos =
+  uint32_of_int32_t (unsafe_get_int32_t_be t ~pos)
+;;
 
 let set_uint32_le_exn t ~pos n =
   check_valid_uint32 ~loc:"Bigstring.set_uint32_le_exn" n;
