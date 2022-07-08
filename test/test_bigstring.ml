@@ -192,8 +192,7 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
     let test getter =
       List.iter
         [ 0x81 (* positive if top bit truncated *)
-        ; 0xc1
-          (* negative if top bit truncated *)
+        ; 0xc1 (* negative if top bit truncated *)
         ]
         ~f:(fun first_byte ->
           let i = getter (getter_t ~first_byte) ~pos:0 in
