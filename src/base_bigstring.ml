@@ -80,7 +80,9 @@ external unsafe_blit
 
 (* Exposing the external version of get/set supports better inlining. *)
 external get : t -> int -> char = "%caml_ba_ref_1"
+external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
 external set : t -> int -> char -> unit = "%caml_ba_set_1"
+external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 
 module Bigstring_sequence = struct
   type nonrec t = t

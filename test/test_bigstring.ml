@@ -534,10 +534,31 @@ let%expect_test "basic char setters" =
        (Ok (120 0 0 0 0 0 0 0))) |}]
 ;;
 
+external unsafe_set : t_frozen -> int -> char -> unit = "%caml_ba_unsafe_set_1"
+
+let%expect_test "basic char unsafe setters" =
+  try_setters
+    'x'
+    [ memset ~len:0; memset ~len:1; memset ~len:2; (fun t ~pos -> set t pos) ]
+  |> printf !"%{sexp#hum:int list Or_error.t list}\n";
+  [%expect
+    {|
+      ((Ok (0 0 0 0 0 0 0 0)) (Ok (120 0 0 0 0 0 0 0)) (Ok (120 120 0 0 0 0 0 0))
+       (Ok (120 0 0 0 0 0 0 0))) |}]
+;;
+
 external get : t_frozen -> int -> char = "%caml_ba_ref_1"
 
 let%expect_test "basic char getters" =
   try_getters ~first_bigstring_byte:1 [ (fun t ~pos -> get t pos) ]
+  |> printf !"%{sexp#hum:char Or_error.t list}\n";
+  [%expect {| ((Ok "\001")) |}]
+;;
+
+external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
+
+let%expect_test "basic unsafe char getters" =
+  try_getters ~first_bigstring_byte:1 [ (fun t ~pos -> unsafe_get t pos) ]
   |> printf !"%{sexp#hum:char Or_error.t list}\n";
   [%expect {| ((Ok "\001")) |}]
 ;;

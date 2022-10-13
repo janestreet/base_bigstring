@@ -87,8 +87,14 @@ val length : t -> int
 (** [get t pos] returns the character at [pos] *)
 external get : t -> int -> char = "%caml_ba_ref_1"
 
+(** [unsafe_get t pos] returns the character at [pos], without bounds checks. *)
+external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
+
 (** [set t pos] sets the character at [pos] *)
 external set : t -> int -> char -> unit = "%caml_ba_set_1"
+
+(** [unsafe_set t pos] sets the character at [pos], without bounds checks. *)
+external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 
 (** [is_mmapped bstr] @return whether the bigstring [bstr] is
     memory-mapped. *)
