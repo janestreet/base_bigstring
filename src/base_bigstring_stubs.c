@@ -123,6 +123,7 @@ CAMLprim value bigstring_blit_bigstring_bytes_stub(
   return Val_unit;
 }
 
+
 CAMLprim value bigstring_blit_stub(
   value v_src, value v_src_pos, value v_dst, value v_dst_pos, value v_len)
 {
@@ -193,17 +194,39 @@ CAMLprim value internalhash_fold_bigstring(value st, value v_str) /* noalloc */
 
 /* Search */
 
+CAMLprim value ptr_to_offset(const char *start, value v_pos, const char *r) {
+
+  if (!r) return Val_long(-1);
+
+  intnat ret = Long_val(v_pos) + r - start;
+  return Val_long(ret);
+}
+
 CAMLprim value bigstring_find(value v_str, value v_needle,
                               value v_pos, value v_len)
 {
   char *start, *r;
-  intnat ret;
 
   start = get_bstr(v_str, v_pos);
   r = (char*) memchr(start, Int_val(v_needle), Long_val(v_len));
 
-  if (!r) return Val_long(-1);
+  return ptr_to_offset(start, v_pos, r);
+}
 
-  ret = Long_val(v_pos) + r - start;
-  return Val_long(ret);
+CAMLprim value bigstring_memmem(value v_haystack, value v_needle,
+                                value v_haystack_pos, value v_haystack_len,
+                                value v_needle_pos, value v_needle_len)
+{
+  const char *haystack = get_bstr(v_haystack, v_haystack_pos);
+  const char *needle = get_bstr(v_needle, v_needle_pos);
+  const char *result = memmem(haystack, Long_val(v_haystack_len),
+                              needle, Long_val(v_needle_len));
+
+  return ptr_to_offset(haystack, v_haystack_pos, result);
+
+}
+
+CAMLprim value bigstring_memmem_bytecode(value *argv, int n) {
+  assert(n==6);
+  return bigstring_memmem(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
 }

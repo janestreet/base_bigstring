@@ -149,6 +149,15 @@ let unsafe_set_uint64_be = unsafe_set_uint64_be
 let unsafe_set_int32_le = unsafe_set_int32_le
 let unsafe_set_int32_be = unsafe_set_int32_be
 
+module Local = struct
+  open Local
+
+  let get_int64_t_le = get_int64_t_le
+  let get_int64_t_be = get_int64_t_be
+  let unsafe_get_int64_t_le = unsafe_get_int64_t_le
+  let unsafe_get_int64_t_be = unsafe_get_int64_t_be
+end
+
 let%test_module "truncating setters (should end in [_trunc] or begin with [unsafe_])" =
   (module struct
     let test setters z =
@@ -159,11 +168,15 @@ let%test_module "truncating setters (should end in [_trunc] or begin with [unsaf
     ;;
 
     let%expect_test "all word sizes" =
-      test [ unsafe_set_int8 ] 0x9080;
+      test [ (fun buf ~pos value -> unsafe_set_int8 buf ~pos value) ] 0x9080;
       [%expect {| 80 0 0 0 0 0 0 0 ; |}];
-      test [ unsafe_set_uint8 ] (-1);
+      test [ (fun buf ~pos value -> unsafe_set_uint8 buf ~pos value) ] (-1);
       [%expect {| ff 0 0 0 0 0 0 0 ; |}];
-      test [ unsafe_set_int16_le; unsafe_set_int16_be ] 0x90_8070;
+      test
+        [ (fun buf ~pos value -> unsafe_set_int16_le buf ~pos value)
+        ; (fun buf ~pos value -> unsafe_set_int16_be buf ~pos value)
+        ]
+        0x90_8070;
       [%expect {| 70 80 0 0 0 0 0 0 ; 80 70 0 0 0 0 0 0 ; |}];
       test [ unsafe_set_uint16_le; unsafe_set_uint16_be ] (-1);
       [%expect {| ff ff 0 0 0 0 0 0 ; ff ff 0 0 0 0 0 0 ; |}];
@@ -175,7 +188,11 @@ let%test_module "truncating setters (should end in [_trunc] or begin with [unsaf
 
     let%expect_test (_ [@tags "64-bits-only"]) =
       Option.iter (Int64.to_int 0x90_8070_6050L) ~f:(fun z ->
-        test [ unsafe_set_int32_le; unsafe_set_int32_be ] z);
+        test
+          [ (fun buf ~pos value -> unsafe_set_int32_le buf ~pos value)
+          ; (fun buf ~pos value -> unsafe_set_int32_be buf ~pos value)
+          ]
+          z);
       [%expect {| 50 60 70 80 0 0 0 0 ; 80 70 60 50 0 0 0 0 ; |}]
     ;;
   end)
@@ -333,7 +350,11 @@ let set_int64_t_le = set_int64_t_le
 let%expect_test "basic int64 setters" =
   try_setters
     0x0102030405060708L
-    [ unsafe_set_int64_t_be; unsafe_set_int64_t_le; set_int64_t_be; set_int64_t_le ]
+    [ (fun t ~pos x -> unsafe_set_int64_t_be t ~pos x)
+    ; (fun t ~pos x -> unsafe_set_int64_t_le t ~pos x)
+    ; (fun t ~pos x -> set_int64_t_be t ~pos x)
+    ; (fun t ~pos x -> set_int64_t_le t ~pos x)
+    ]
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
     {|
@@ -349,12 +370,21 @@ let get_int64_t_le = get_int64_t_le
 let%expect_test "basic int64 getters" =
   try_getters
     ~first_bigstring_byte:1
-    [ unsafe_get_int64_t_be; unsafe_get_int64_t_le; get_int64_t_be; get_int64_t_le ]
+    [ unsafe_get_int64_t_be
+    ; unsafe_get_int64_t_le
+    ; get_int64_t_be
+    ; (fun t ~pos -> Int64.( + ) 0L (get_int64_t_le t ~pos))
+    ; (fun t ~pos -> (Local.unsafe_get_int64_t_be t ~pos |> globalize_int64) [@nontail])
+    ; (fun t ~pos -> (Local.unsafe_get_int64_t_le t ~pos |> globalize_int64) [@nontail])
+    ; (fun t ~pos -> (Local.get_int64_t_be t ~pos |> globalize_int64) [@nontail])
+    ; (fun t ~pos -> (Local.get_int64_t_le t ~pos |> globalize_int64) [@nontail])
+    ]
   |> printf !"%{sexp#hum:Int64.Hex.t Or_error.t list}\n";
   [%expect
     {|
       ((Ok 0x102030405060708) (Ok 0x807060504030201) (Ok 0x102030405060708)
-       (Ok 0x807060504030201)) |}]
+       (Ok 0x807060504030201) (Ok 0x102030405060708) (Ok 0x807060504030201)
+       (Ok 0x102030405060708) (Ok 0x807060504030201)) |}]
 ;;
 
 let unsafe_set_int32_t_be = unsafe_set_int32_t_be
@@ -483,6 +513,76 @@ let%expect_test "basic find" =
   [%test_result: int option] ~expect:None (find 'd' t);
   require_does_raise [%here] (fun () -> find 'b' t ~pos:4);
   [%expect {| (Invalid_argument "find: len < 0") |}]
+;;
+
+external unsafe_memmem
+  :  haystack:t
+  -> needle:t
+  -> haystack_pos:int
+  -> haystack_len:int
+  -> needle_pos:int
+  -> needle_len:int
+  -> int
+  = "bigstring_memmem_bytecode" "bigstring_memmem"
+[@@noalloc]
+
+let%expect_test "basic unsafe_memmem" =
+  let haystack = "foo bar baz qwux" |> of_string in
+  let t ~haystack_pos ~haystack_len ~needle_pos ~needle_len needle =
+    let result =
+      unsafe_memmem
+        ~haystack
+        ~needle:(of_string needle)
+        ~haystack_pos
+        ~haystack_len
+        ~needle_pos
+        ~needle_len
+    in
+    print_s [%sexp (result : int)]
+  in
+  t ~haystack_pos:0 ~haystack_len:16 ~needle_pos:0 ~needle_len:4 "nope";
+  [%expect {| -1 |}];
+  t ~haystack_pos:0 ~haystack_len:16 ~needle_pos:0 ~needle_len:4 "qwux";
+  [%expect {| 12 |}];
+  t ~haystack_pos:0 ~haystack_len:15 ~needle_pos:0 ~needle_len:4 "qwux";
+  [%expect {| -1 |}];
+  t ~haystack_pos:0 ~haystack_len:16 ~needle_pos:1 ~needle_len:3 "ZfooZ";
+  [%expect {| 0 |}];
+  t ~haystack_pos:1 ~haystack_len:16 ~needle_pos:1 ~needle_len:3 "ZfooZ";
+  [%expect {| -1 |}];
+  t ~haystack_pos:1 ~haystack_len:16 ~needle_pos:1 ~needle_len:3 "Zoo Z";
+  [%expect {| 1 |}]
+;;
+
+let memmem = memmem
+
+let%expect_test "basic memmem" =
+  let haystack = "foo bar baz qwux" |> of_string in
+  let t ?haystack_pos ?haystack_len ?needle_pos ?needle_len needle =
+    let result =
+      memmem
+        ~haystack
+        ~needle:(of_string needle)
+        ?haystack_pos
+        ?haystack_len
+        ?needle_pos
+        ?needle_len
+        ()
+    in
+    print_s [%sexp (result : int option)]
+  in
+  t "nope";
+  [%expect {| () |}];
+  t "qwux";
+  [%expect {| (12) |}];
+  t ~haystack_len:15 "qwux";
+  [%expect {| () |}];
+  t ~needle_pos:1 ~needle_len:3 "ZfooZ";
+  [%expect {| (0) |}];
+  t ~haystack_pos:1 ~needle_pos:1 ~needle_len:3 "ZfooZ";
+  [%expect {| () |}];
+  t ~haystack_pos:1 ~needle_pos:1 ~needle_len:3 "Zoo Z";
+  [%expect {| (1) |}]
 ;;
 
 let get_opt_len = get_opt_len
@@ -630,6 +730,18 @@ let%expect_test "basic equal" =
     in
     test s1;
     List.iter strings ~f:test)
+;;
+
+let%expect_test ("local allocation does not heap allocate" [@tags "64-bits-only"]) =
+  let t = init 8 ~f:Char.of_int_exn in
+  Expect_test_helpers_core.require_no_allocation [%here] (fun () ->
+    let x = Local.get_int64_t_be t ~pos:0 in
+    set_int64_t_be t ~pos:0 x [@nontail]);
+  [%expect ""];
+  Expect_test_helpers_core.require_no_allocation [%here] (fun () ->
+    let x = Local.get_int64_t_le t ~pos:0 in
+    set_int64_t_le t ~pos:0 x [@nontail]);
+  [%expect ""]
 ;;
 
 type nonrec t = t

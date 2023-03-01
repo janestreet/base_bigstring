@@ -82,3 +82,21 @@ function bigstring_find(bs, chr, pos, len){
   }
   return -1;
 }
+
+//Provides: bigstring_memmem_bytecode
+//Requires: caml_ba_get_1
+function bigstring_memmem_bytecode(haystack, needle, haystack_pos, haystack_len, needle_pos, needle_len){
+  var i = 0;
+  var lim = haystack_len - needle_len;
+  for(var i = 0; i <= lim; ++i) {
+    var matches = true;
+    for (var j = 0; j < needle_len; ++j) {
+      if (caml_ba_get_1(haystack, haystack_pos + i + j) != caml_ba_get_1(needle,needle_pos + j)) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) return (haystack_pos + i);
+  }
+  return -1;
+}

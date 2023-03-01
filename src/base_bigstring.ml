@@ -14,8 +14,15 @@ module Array1 = struct
   external get : ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
   external set : ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_set_1"
   external unsafe_get : ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
-  external unsafe_set : ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_unsafe_set_1"
-  external dim : ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
+
+  external unsafe_set
+    :  (('a, 'b, 'c) t[@local_opt])
+    -> int
+    -> 'a
+    -> unit
+    = "%caml_ba_unsafe_set_1"
+
+  external dim : (('a, 'b, 'c) t[@local_opt]) -> int = "%caml_ba_dim_1"
 end
 
 include Bigstring0
@@ -25,9 +32,9 @@ external aux_create : max_mem_waiting_gc_in_bytes:int -> size:int -> t = "bigstr
 let sprintf = Printf.sprintf
 
 (* One needs to use [Caml.Sys.word_size] so that its value is known at compile-time. *)
-let arch_sixtyfour = Caml.Sys.word_size = 64
-let arch_big_endian = Caml.Sys.big_endian
-let not_on_32bit = Caml.Sys.word_size > 32
+let arch_sixtyfour = Stdlib.Sys.word_size = 64
+let arch_big_endian = Stdlib.Sys.big_endian
+let not_on_32bit = Stdlib.Sys.word_size > 32
 
 let create ?max_mem_waiting_gc_in_bytes size =
   let max_mem_waiting_gc_in_bytes =
@@ -51,7 +58,7 @@ let init n ~f =
   t
 ;;
 
-let check_args ~loc ~pos ~len (bstr : t) =
+let[@inline never] check_args_slow ~loc ~pos ~len (bstr : t) =
   if pos < 0 then invalid_arg (loc ^ ": pos < 0");
   if len < 0 then invalid_arg (loc ^ ": len < 0");
   let bstr_len = length bstr in
@@ -59,6 +66,12 @@ let check_args ~loc ~pos ~len (bstr : t) =
      Int.max_value] passed by the user. *)
   if bstr_len - pos < len
   then invalid_arg (sprintf "Bigstring.%s: length(bstr) < pos + len" loc)
+;;
+
+let[@inline always] check_args ~loc ~pos ~len (bstr : t) =
+  let open Bool.Non_short_circuiting in
+  let bstr_len = length bstr in
+  if pos < 0 || len < 0 || bstr_len - pos < len then check_args_slow ~loc ~pos ~len bstr
 ;;
 
 let get_opt_len bstr ~pos = function
@@ -69,9 +82,9 @@ let get_opt_len bstr ~pos = function
 (* Blitting *)
 
 external unsafe_blit
-  :  src:t
+  :  src:(t[@local_opt])
   -> src_pos:int
-  -> dst:t
+  -> dst:(t[@local_opt])
   -> dst_pos:int
   -> len:int
   -> unit
@@ -109,9 +122,9 @@ module From_bytes =
     (Bytes_sequence)
     (struct
       external unsafe_blit
-        :  src:bytes
+        :  src:(bytes[@local_opt])
         -> src_pos:int
-        -> dst:t
+        -> dst:(t[@local_opt])
         -> dst_pos:int
         -> len:int
         -> unit
@@ -126,9 +139,9 @@ module To_bytes =
     (Bigstring_sequence)
     (struct
       external unsafe_blit
-        :  src:t
+        :  src:(t[@local_opt])
         -> src_pos:int
-        -> dst:bytes
+        -> dst:(bytes[@local_opt])
         -> dst_pos:int
         -> len:int
         -> unit
@@ -147,9 +160,9 @@ module From_string =
     end)
     (struct
       external unsafe_blit
-        :  src:string
+        :  src:(string[@local_opt])
         -> src_pos:int
-        -> dst:t
+        -> dst:(t[@local_opt])
         -> dst_pos:int
         -> len:int
         -> unit
@@ -191,10 +204,12 @@ let concat =
     | [] -> create 0
     | head :: tail ->
       let head_len = length head in
-      let sep_len = Option.value_map sep ~f:length ~default:0 in
+      let sep_len = Option.value_map sep ~f:(fun t -> length t) ~default:0 in
       let tail_count = List.length tail in
       let len =
-        head_len + (sep_len * tail_count) + List.sum (module Int) tail ~f:length
+        head_len
+        + (sep_len * tail_count)
+        + List.sum (module Int) tail ~f:(fun t -> length t)
       in
       let dst = create len in
       let dst_pos_ref = ref 0 in
@@ -292,10 +307,38 @@ let equal t1 t2 =
 external unsafe_find : t -> char -> pos:int -> len:int -> int = "bigstring_find"
 [@@noalloc]
 
+external unsafe_memmem
+  :  haystack:t
+  -> needle:t
+  -> haystack_pos:int
+  -> haystack_len:int
+  -> needle_pos:int
+  -> needle_len:int
+  -> int
+  = "bigstring_memmem_bytecode" "bigstring_memmem"
+[@@noalloc]
+
 let find ?(pos = 0) ?len chr bstr =
   let len = get_opt_len bstr ~pos len in
   check_args ~loc:"find" ~pos ~len bstr;
   let res = unsafe_find bstr chr ~pos ~len in
+  if res < 0 then None else Some res
+;;
+
+let memmem
+      ~haystack
+      ~needle
+      ?(haystack_pos = 0)
+      ?haystack_len
+      ?(needle_pos = 0)
+      ?needle_len
+      ()
+  =
+  let haystack_len = get_opt_len haystack ~pos:haystack_pos haystack_len in
+  let needle_len = get_opt_len needle ~pos:needle_pos needle_len in
+  let res =
+    unsafe_memmem ~haystack ~needle ~haystack_pos ~haystack_len ~needle_pos ~needle_len
+  in
   if res < 0 then None else Some res
 ;;
 
@@ -306,43 +349,50 @@ let find ?(pos = 0) ?len chr bstr =
 external int32_of_int : int -> int32 = "%int32_of_int"
 external int32_to_int : int32 -> int = "%int32_to_int"
 external int64_of_int : int -> int64 = "%int64_of_int"
-external int64_to_int : int64 -> int = "%int64_to_int"
+external int64_to_int : (int64[@local]) -> int = "%int64_to_int"
 external swap16 : int -> int = "%bswap16"
 external swap32 : int32 -> int32 = "%bswap_int32"
-external swap64 : int64 -> int64 = "%bswap_int64"
+external swap64 : (int64[@local]) -> int64 = "%bswap_int64"
 external unsafe_get_16 : t -> int -> int = "%caml_bigstring_get16u"
 external unsafe_get_32 : t -> int -> int32 = "%caml_bigstring_get32u"
 external unsafe_get_64 : t -> int -> int64 = "%caml_bigstring_get64u"
-external unsafe_set_16 : t -> int -> int -> unit = "%caml_bigstring_set16u"
-external unsafe_set_32 : t -> int -> int32 -> unit = "%caml_bigstring_set32u"
-external unsafe_set_64 : t -> int -> int64 -> unit = "%caml_bigstring_set64u"
+external unsafe_set_16 : (t[@local_opt]) -> int -> int -> unit = "%caml_bigstring_set16u"
 
-let get_16 (t : t) (pos : int) : int =
+external unsafe_set_32
+  :  (t[@local_opt])
+  -> int
+  -> int32
+  -> unit
+  = "%caml_bigstring_set32u"
+
+external unsafe_set_64 : t -> int -> (int64[@local]) -> unit = "%caml_bigstring_set64u"
+
+let[@inline always] get_16 (t : t) (pos : int) : int =
   check_args ~loc:"get_16" ~pos ~len:2 t;
   unsafe_get_16 t pos
 ;;
 
-let get_32 (t : t) (pos : int) : int32 =
+let[@inline always] get_32 (t : t) (pos : int) : int32 =
   check_args ~loc:"get_32" ~pos ~len:4 t;
   unsafe_get_32 t pos
 ;;
 
-let get_64 (t : t) (pos : int) : int64 =
+let[@inline always] get_64 (t : t) (pos : int) : int64 =
   check_args ~loc:"get_64" ~pos ~len:8 t;
   unsafe_get_64 t pos
 ;;
 
-let set_16_trunc (t : t) (pos : int) (v : int) : unit =
+let[@inline always] set_16_trunc (t : t) (pos : int) (v : int) : unit =
   check_args ~loc:"set_16" ~pos ~len:2 t;
   unsafe_set_16 t pos v
 ;;
 
-let set_32 (t : t) (pos : int) (v : int32) : unit =
+let[@inline always] set_32 (t : t) (pos : int) (v : int32) : unit =
   check_args ~loc:"set_32" ~pos ~len:4 t;
   unsafe_set_32 t pos v
 ;;
 
-let set_64 (t : t) (pos : int) (v : int64) : unit =
+let[@inline always] set_64 (t : t) (pos : int) ((v : int64) [@local]) : unit =
   check_args ~loc:"set_64" ~pos ~len:8 t;
   unsafe_set_64 t pos v
 ;;
@@ -481,8 +531,8 @@ let[@inline always] read_int64_int t ~pos = int64_to_int (get_64 t pos)
 let[@inline always] read_int64_int_swap t ~pos = int64_to_int (swap64 (get_64 t pos))
 let[@inline always] read_int64 t ~pos = get_64 t pos
 let[@inline always] read_int64_swap t ~pos = swap64 (get_64 t pos)
-let write_int64 t ~pos x = set_64 t pos x
-let write_int64_swap t ~pos x = set_64 t pos (swap64 x)
+let write_int64 t ~pos (x [@local]) = set_64 t pos x
+let write_int64_swap t ~pos (x [@local]) = set_64 t pos (swap64 x)
 let write_int64_int t ~pos x = set_64 t pos (int64_of_int x)
 let write_int64_int_swap t ~pos x = set_64 t pos (swap64 (int64_of_int x))
 
@@ -619,6 +669,35 @@ let unsafe_set_int64_t_le =
   if arch_big_endian then unsafe_write_int64_swap else unsafe_write_int64
 ;;
 
+module Local = struct
+  let[@inline always] unsafe_read_int64_local t ~pos =
+     (Int64.( + ) 0L (unsafe_read_int64 t ~pos))
+  ;;
+
+  let[@inline always] unsafe_read_int64_swap_local t ~pos =
+     (Int64.( + ) 0L (unsafe_read_int64_swap t ~pos))
+  ;;
+
+  let[@inline always] read_int64_local t ~pos =
+     (Int64.( + ) 0L (read_int64 t ~pos))
+  ;;
+
+  let[@inline always] read_int64_swap_local t ~pos =
+     (Int64.( + ) 0L (read_int64_swap t ~pos))
+  ;;
+
+  let unsafe_get_int64_t_be =
+    if arch_big_endian then unsafe_read_int64_local else unsafe_read_int64_swap_local
+  ;;
+
+  let unsafe_get_int64_t_le =
+    if arch_big_endian then unsafe_read_int64_swap_local else unsafe_read_int64_local
+  ;;
+
+  let get_int64_t_be = if arch_big_endian then read_int64_local else read_int64_swap_local
+  let get_int64_t_le = if arch_big_endian then read_int64_swap_local else read_int64_local
+end
+
 let get_int64_t_be = if arch_big_endian then read_int64 else read_int64_swap
 let get_int64_t_le = if arch_big_endian then read_int64_swap else read_int64
 let set_int64_t_be = if arch_big_endian then write_int64 else write_int64_swap
@@ -633,7 +712,7 @@ let uint64_conv_error () =
 ;;
 
 (* [Poly] is required so that we can compare unboxed [int64]. *)
-let[@inline always] int64_to_int_exn n =
+let[@inline always] int64_to_int_exn (n [@local]) =
   if arch_sixtyfour
   then
     if Poly.(n >= -0x4000_0000_0000_0000L && n < 0x4000_0000_0000_0000L)
@@ -729,13 +808,13 @@ let get_int8 (t : t) ~pos =
   if n >= 128 then n - 256 else n
 ;;
 
-let mask32_n = Caml.Nativeint.(sub (shift_left 1n 32) 1n)
+let mask32_n = Stdlib.Nativeint.(sub (shift_left 1n 32) 1n)
 
 let[@inline always] uint32_of_int32_t n =
   if not_on_32bit
   then
     (* use Caml.Nativeint to ensure inlining even without x-library-inlining *)
-    Caml.Nativeint.(to_int (logand (of_int32 n) mask32_n))
+    Stdlib.Nativeint.(to_int (logand (of_int32 n) mask32_n))
   else int32_to_int n
 ;;
 
