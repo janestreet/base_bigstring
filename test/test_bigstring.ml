@@ -94,7 +94,6 @@ let%test_unit "roundtrip" =
 external is_mmapped : t_frozen -> bool = "bigstring_is_mmapped_stub" [@@noalloc]
 
 let%test "bigstring created with create are not mmapped" = not (is_mmapped (create 2))
-
 let init = init
 
 let try_setters z =
