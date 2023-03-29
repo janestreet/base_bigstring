@@ -2,9 +2,6 @@
 
 #define _GNU_SOURCE             /* recvmmsg */
 
-/* For pread/pwrite */
-#define _XOPEN_SOURCE 500
-
 /* For OpenBSD `swap` functions */
 #ifdef __OpenBSD__
 #define _BSD_SOURCE
