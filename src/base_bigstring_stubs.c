@@ -52,7 +52,9 @@ static inline uint16_t bswap_16 (uint16_t x)
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #include <sys/endian.h>
 #else
+#ifndef _MSC_VER
 #include <endian.h>
+#endif
 #endif
 #define __BYTE_ORDER    _BYTE_ORDER
 #define __LITTLE_ENDIAN _LITTLE_ENDIAN
