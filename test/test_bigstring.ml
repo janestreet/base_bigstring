@@ -743,6 +743,138 @@ let%expect_test ("local allocation does not heap allocate" [@tags "64-bits-only"
   [%expect ""]
 ;;
 
+let%expect_test "unsafe_get_int64_le_exn correctness" =
+  let case (here, behavior, i) =
+    let convert () =
+      let t = create 8 in
+      set_int64_t_le t ~pos:0 i;
+      let result = unsafe_get_int64_le_exn t ~pos:0 in
+      let expected = Int.of_int64_trunc i in
+      require_equal here (module Int) expected result;
+      result
+    in
+    match behavior with
+    | `Fit -> require_does_not_raise here (fun () -> ignore (convert () : int))
+    | `Raise ->
+      Or_error.try_with convert
+      |> require_error here (fun result ->
+        [%message "Unexpectedly successfully converted" (result : int)])
+  in
+  let max_val = Int64.of_int Int.max_value in
+  let min_val = Int64.of_int Int.min_value in
+  List.iter
+    ~f:case
+    [ [%here], `Fit, 0L
+    ; [%here], `Fit, 1000000L
+    ; [%here], `Fit, -1000000L
+    ; [%here], `Fit, max_val
+    ; ([%here], `Fit, Int64.(max_val - 1L))
+    ; ([%here], `Fit, Int64.(max_val - 1000L))
+    ; ([%here], `Raise, Int64.(max_val + 1L))
+    ; ([%here], `Raise, Int64.(max_val + 1000L))
+    ; [%here], `Fit, min_val
+    ; ([%here], `Fit, Int64.(min_val + 1L))
+    ; ([%here], `Fit, Int64.(min_val + 1000L))
+    ; ([%here], `Raise, Int64.(min_val - 1L))
+    ; ([%here], `Raise, Int64.(min_val - 1000L))
+    ]
+;;
+
+let%bench_module "" =
+  (module struct
+    (* Copied some stuff so we could benchmark int64_to_int_exn different implementations.
+    *)
+    let arch_sixtyfour = Stdlib.Sys.word_size = 64
+
+    external int64_to_int : (int64[@local]) -> int = "%int64_to_int"
+
+    let int64_conv_error () =
+      failwith "unsafe_read_int64: value cannot be represented unboxed!"
+    ;;
+
+    let some_int = 42L
+
+    (* [Poly] is required so that we can compare unboxed [int64]. *)
+    let[@inline always] old_int64_to_int_exn (n [@local]) =
+      if arch_sixtyfour
+      then
+        if Poly.(n >= -0x4000_0000_0000_0000L && n < 0x4000_0000_0000_0000L)
+        then int64_to_int n
+        else int64_conv_error ()
+      else if Poly.(n >= -0x0000_0000_4000_0000L && n < 0x0000_0000_4000_0000L)
+      then int64_to_int n
+      else int64_conv_error ()
+    ;;
+
+    let[@inline always] bit_manipulation_int64_to_int_exn (n [@local]) =
+      if arch_sixtyfour
+      then
+        (*
+           For positive int64, the bits must start with: 00...
+           and for negative ones, the bits must start with: 11...
+           {v
+               n           = 0bXY...
+               m = n asr 1 = 0bXX...
+               m lxor n    = 0b0(X xor Y)...
+                           = 0b01... if n = 0b01... or 0b10...
+                           = 0b00... if n = 0b00... or 0b11...
+             v}
+        *)
+        if Poly.(Int64.((n asr 1) lxor n) < 0x4000_0000_0000_0000L)
+        then int64_to_int n
+        else int64_conv_error ()
+      else if Poly.(n >= -0x0000_0000_4000_0000L && n < 0x0000_0000_4000_0000L)
+      then int64_to_int n
+      else int64_conv_error ()
+    ;;
+
+    let[@inline always] with_poly_eq_int64_to_int_exn (n [@local]) =
+      let n' = int64_to_int n in
+      if Poly.( = ) (Int64.of_int n') n then n' else int64_conv_error ()
+    ;;
+
+    let%bench_fun "with_poly_eq (new implementation)" =
+      fun () ->
+      for _ = 1 to 1000 do
+        ignore
+          (Sys.opaque_identity
+             (with_poly_eq_int64_to_int_exn (Sys.opaque_identity some_int))
+           : int)
+      done
+    ;;
+
+    let%bench_fun "bit manipulation" =
+      fun () ->
+      for _ = 1 to 1000 do
+        ignore
+          (Sys.opaque_identity
+             (bit_manipulation_int64_to_int_exn (Sys.opaque_identity some_int))
+           : int)
+      done
+    ;;
+
+    let%bench_fun "old implementation (doing range checks)" =
+      fun () ->
+      for _ = 1 to 1000 do
+        ignore
+          (Sys.opaque_identity (old_int64_to_int_exn (Sys.opaque_identity some_int))
+           : int)
+      done
+    ;;
+
+    (*
+       Results:
+       ┌──────────────────────────────────────────────────────────────┬────────────┬────────────┐
+       │ Name                                                         │   Time/Run │ Percentage │
+       ├──────────────────────────────────────────────────────────────┼────────────┼────────────┤
+       │ [test_bigstring.ml:] with_poly_eq (new implementation)       │   579.22ns │     39.53% │
+       │ [test_bigstring.ml:] bit manipulation                        │   985.03ns │     67.22% │
+       │ [test_bigstring.ml:] old implementation (doing range checks) │ 1_465.38ns │    100.00% │
+       └──────────────────────────────────────────────────────────────┴────────────┴────────────┘
+    *)
+  end)
+;;
+
 type nonrec t = t
 type nonrec t_frozen = t_frozen [@@deriving compare, hash, sexp]
 

@@ -234,32 +234,32 @@ let memset t ~pos ~len c =
 (* Comparison *)
 
 external unsafe_memcmp
-  :  t
+  :  (t[@local])
   -> pos1:int
-  -> t
+  -> (t[@local])
   -> pos2:int
   -> len:int
   -> int
   = "bigstring_memcmp_stub"
 [@@noalloc]
 
-let memcmp t1 ~pos1 t2 ~pos2 ~len =
+let memcmp (t1 [@local]) ~pos1 (t2 [@local]) ~pos2 ~len =
   Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
   Ordered_collection_common.check_pos_len_exn ~pos:pos2 ~len ~total_length:(length t2);
   unsafe_memcmp t1 ~pos1 t2 ~pos2 ~len
 ;;
 
 external unsafe_memcmp_bytes
-  :  t
+  :  (t[@local])
   -> pos1:int
-  -> Bytes.t
+  -> (Bytes.t[@local])
   -> pos2:int
   -> len:int
   -> int
   = "bigstring_memcmp_bytes_stub"
 [@@noalloc]
 
-let memcmp_bytes t1 ~pos1 bytes ~pos2 ~len =
+let memcmp_bytes (t1 [@local]) ~pos1 (bytes [@local]) ~pos2 ~len =
   Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
   Ordered_collection_common.check_pos_len_exn
     ~pos:pos2
@@ -711,25 +711,19 @@ let uint64_conv_error () =
   failwith "unsafe_read_uint64: value cannot be represented unboxed!"
 ;;
 
-(* [Poly] is required so that we can compare unboxed [int64]. *)
 let[@inline always] int64_to_int_exn (n [@local]) =
-  if arch_sixtyfour
-  then
-    if Poly.(n >= -0x4000_0000_0000_0000L && n < 0x4000_0000_0000_0000L)
-    then int64_to_int n
-    else int64_conv_error ()
-  else if Poly.(n >= -0x0000_0000_4000_0000L && n < 0x0000_0000_4000_0000L)
-  then int64_to_int n
-  else int64_conv_error ()
+  let n' = int64_to_int n in
+  (* The compiler will eliminate any boxing here. *)
+  if Int64.( = ) (Int64.of_int n') n then n' else int64_conv_error ()
 ;;
 
 let[@inline always] uint64_to_int_exn n =
   if arch_sixtyfour
   then
-    if Poly.(n >= 0L && n < 0x4000_0000_0000_0000L)
+    if Int64.(n >= 0L && n < 0x4000_0000_0000_0000L)
     then int64_to_int n
     else uint64_conv_error ()
-  else if Poly.(n >= 0L && n < 0x0000_0000_4000_0000L)
+  else if Int64.(n >= 0L && n < 0x0000_0000_4000_0000L)
   then int64_to_int n
   else uint64_conv_error ()
 ;;

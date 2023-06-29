@@ -136,10 +136,16 @@ val memset : t -> pos:int -> len:int -> char -> unit
 
 (** [memcmp t1 ~pos1 t2 ~pos2 ~len] is like [compare t1 t2] except performs the comparison
     on the subregions of [t1] and [t2] defined by [pos1], [pos2], and [len]. *)
-val memcmp : t -> pos1:int -> t -> pos2:int -> len:int -> int
+val memcmp : (t[@local]) -> pos1:int -> (t[@local]) -> pos2:int -> len:int -> int
 
 (** [memcmp_bytes], for efficient [memcmp] between [Bigstring] and [Bytes] data. *)
-val memcmp_bytes : t -> pos1:int -> Bytes.t -> pos2:int -> len:int -> int
+val memcmp_bytes
+  :  (t[@local])
+  -> pos1:int
+  -> (Bytes.t[@local])
+  -> pos2:int
+  -> len:int
+  -> int
 
 (** {2 Search} *)
 
