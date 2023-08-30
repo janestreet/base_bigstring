@@ -671,19 +671,19 @@ let unsafe_set_int64_t_le =
 
 module Local = struct
   let[@inline always] unsafe_read_int64_local t ~pos =
-     (Int64.( + ) 0L (unsafe_read_int64 t ~pos))
+    [%ocaml.local] (Int64.( + ) 0L (unsafe_read_int64 t ~pos))
   ;;
 
   let[@inline always] unsafe_read_int64_swap_local t ~pos =
-     (Int64.( + ) 0L (unsafe_read_int64_swap t ~pos))
+    [%ocaml.local] (Int64.( + ) 0L (unsafe_read_int64_swap t ~pos))
   ;;
 
   let[@inline always] read_int64_local t ~pos =
-     (Int64.( + ) 0L (read_int64 t ~pos))
+    [%ocaml.local] (Int64.( + ) 0L (read_int64 t ~pos))
   ;;
 
   let[@inline always] read_int64_swap_local t ~pos =
-     (Int64.( + ) 0L (read_int64_swap t ~pos))
+    [%ocaml.local] (Int64.( + ) 0L (read_int64_swap t ~pos))
   ;;
 
   let unsafe_get_int64_t_be =
