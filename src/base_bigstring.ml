@@ -5,7 +5,7 @@ module Bigstring0 = struct
     ( char
     , Stdlib.Bigarray.int8_unsigned_elt
     , Stdlib.Bigarray.c_layout )
-      Stdlib.Bigarray.Array1.t
+    Stdlib.Bigarray.Array1.t
 end
 
 module Array1 = struct
@@ -89,7 +89,7 @@ external unsafe_blit
   -> len:int
   -> unit
   = "bigstring_blit_stub"
-[@@noalloc]
+  [@@noalloc]
 
 (* Exposing the external version of get/set supports better inlining. *)
 external get : t -> int -> char = "%caml_ba_ref_1"
@@ -112,10 +112,10 @@ module Bytes_sequence = struct
 end
 
 include Blit.Make (struct
-    include Bigstring_sequence
+  include Bigstring_sequence
 
-    let unsafe_blit = unsafe_blit
-  end)
+  let unsafe_blit = unsafe_blit
+end)
 
 module From_bytes =
   Blit.Make_distinct
@@ -129,7 +129,7 @@ module From_bytes =
         -> len:int
         -> unit
         = "bigstring_blit_bytes_bigstring_stub"
-      [@@noalloc]
+        [@@noalloc]
 
       include Bigstring_sequence
     end)
@@ -146,7 +146,7 @@ module To_bytes =
         -> len:int
         -> unit
         = "bigstring_blit_bigstring_bytes_stub"
-      [@@noalloc]
+        [@@noalloc]
 
       include Bytes_sequence
     end)
@@ -167,7 +167,7 @@ module From_string =
         -> len:int
         -> unit
         = "bigstring_blit_string_bigstring_stub"
-      [@@noalloc]
+        [@@noalloc]
 
       include Bigstring_sequence
     end)
@@ -224,7 +224,7 @@ let concat =
 ;;
 
 external unsafe_memset : t -> pos:int -> len:int -> char -> unit = "bigstring_memset_stub"
-[@@noalloc]
+  [@@noalloc]
 
 let memset t ~pos ~len c =
   Ordered_collection_common.check_pos_len_exn ~pos ~len ~total_length:(length t);
@@ -241,7 +241,7 @@ external unsafe_memcmp
   -> len:int
   -> int
   = "bigstring_memcmp_stub"
-[@@noalloc]
+  [@@noalloc]
 
 let memcmp (t1 [@local]) ~pos1 (t2 [@local]) ~pos2 ~len =
   Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
@@ -257,7 +257,7 @@ external unsafe_memcmp_bytes
   -> len:int
   -> int
   = "bigstring_memcmp_bytes_stub"
-[@@noalloc]
+  [@@noalloc]
 
 let memcmp_bytes (t1 [@local]) ~pos1 (bytes [@local]) ~pos2 ~len =
   Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
@@ -285,7 +285,7 @@ external internalhash_fold_bigstring
   -> t
   -> Hash.state
   = "internalhash_fold_bigstring"
-[@@noalloc]
+  [@@noalloc]
 
 let _making_sure_the_C_binding_takes_an_int (x : Hash.state) = (x :> int)
 let hash_fold_t = internalhash_fold_bigstring
@@ -305,7 +305,7 @@ let equal t1 t2 =
 (* Search *)
 
 external unsafe_find : t -> char -> pos:int -> len:int -> int = "bigstring_find"
-[@@noalloc]
+  [@@noalloc]
 
 external unsafe_memmem
   :  haystack:t
@@ -316,7 +316,7 @@ external unsafe_memmem
   -> needle_len:int
   -> int
   = "bigstring_memmem_bytecode" "bigstring_memmem"
-[@@noalloc]
+  [@@noalloc]
 
 let find ?(pos = 0) ?len chr bstr =
   let len = get_opt_len bstr ~pos len in
@@ -326,13 +326,13 @@ let find ?(pos = 0) ?len chr bstr =
 ;;
 
 let memmem
-      ~haystack
-      ~needle
-      ?(haystack_pos = 0)
-      ?haystack_len
-      ?(needle_pos = 0)
-      ?needle_len
-      ()
+  ~haystack
+  ~needle
+  ?(haystack_pos = 0)
+  ?haystack_len
+  ?(needle_pos = 0)
+  ?needle_len
+  ()
   =
   let haystack_len = get_opt_len haystack ~pos:haystack_pos haystack_len in
   let needle_len = get_opt_len needle ~pos:needle_pos needle_len in
@@ -424,23 +424,23 @@ let check_valid_int32 =
   then fun _ ~loc:_ -> ()
   else
     fun x ~loc ->
-      if x >= -1 lsl 31 && x < 1 lsl 31
-      then ()
-      else invalid_arg (sprintf "%s: %d is not a valid (signed) 32-bit integer" loc x)
+    if x >= -1 lsl 31 && x < 1 lsl 31
+    then ()
+    else invalid_arg (sprintf "%s: %d is not a valid (signed) 32-bit integer" loc x)
 ;;
 
 let check_valid_uint32 =
   if not arch_sixtyfour
   then
     fun x ~loc ->
-      if x >= 0
-      then ()
-      else invalid_arg (sprintf "%s: %d is not a valid unsigned 32-bit integer" loc x)
+    if x >= 0
+    then ()
+    else invalid_arg (sprintf "%s: %d is not a valid unsigned 32-bit integer" loc x)
   else
     fun x ~loc ->
-      if x >= 0 && x < 1 lsl 32
-      then ()
-      else invalid_arg (sprintf "%s: %d is not a valid unsigned 32-bit integer" loc x)
+    if x >= 0 && x < 1 lsl 32
+    then ()
+    else invalid_arg (sprintf "%s: %d is not a valid unsigned 32-bit integer" loc x)
 ;;
 
 let check_valid_uint64 x ~loc =

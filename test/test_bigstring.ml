@@ -121,9 +121,9 @@ let%expect_test "checking setters (should end in [_exn])" =
   let test setters z =
     try_setters z setters
     |> List.iteri ~f:(fun i -> function
-      | Ok bytes ->
-        raise_s [%message "didn't raise" (z : Int.Hex.t) (i : int) (bytes : int list)]
-      | Error _ -> ())
+         | Ok bytes ->
+           raise_s [%message "didn't raise" (z : Int.Hex.t) (i : int) (bytes : int list)]
+         | Error _ -> ())
   in
   test [ set_int8_exn ] 0x80;
   test [ set_uint8_exn ] (-1);
@@ -162,8 +162,8 @@ let%test_module "truncating setters (should end in [_trunc] or begin with [unsaf
     let test setters z =
       try_setters z setters
       |> List.iter ~f:(fun t ->
-        Or_error.ok_exn t |> List.iter ~f:(printf "%x ");
-        printf "; ")
+           Or_error.ok_exn t |> List.iter ~f:(printf "%x ");
+           printf "; ")
     ;;
 
     let%expect_test "all word sizes" =
@@ -211,10 +211,10 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
         ; 0xc1 (* negative if top bit truncated *)
         ]
         ~f:(fun first_byte ->
-          let i = getter (getter_t ~first_byte) ~pos:0 in
-          (* Signed hex is not clear; make sure the hex is unsigned.  Include the signed
+        let i = getter (getter_t ~first_byte) ~pos:0 in
+        (* Signed hex is not clear; make sure the hex is unsigned.  Include the signed
              decimal form mainly to indicate the sign. *)
-          printf !"0x%x (= %d)\n" i i)
+        printf !"0x%x (= %d)\n" i i)
     ;;
 
     let%expect_test ("63-bit int" [@tags "64-bits-only"]) =
@@ -303,8 +303,8 @@ let%expect_test "checking getters (should end in [_exn])" =
   let test getters ~first_bigstring_byte =
     try_getters getters ~first_bigstring_byte
     |> List.iteri ~f:(fun i -> function
-      | Ok z -> raise_s [%message "didn't raise" (i : int) (z : Int.Hex.t)]
-      | Error _ -> ())
+         | Ok z -> raise_s [%message "didn't raise" (i : int) (z : Int.Hex.t)]
+         | Error _ -> ())
   in
   test
     (* These should check that the 64th bit in the string representation is redundant, so
@@ -486,7 +486,7 @@ let%expect_test "basic int getters" =
 ;;
 
 external unsafe_find : t_frozen -> char -> pos:int -> len:int -> int = "bigstring_find"
-[@@noalloc]
+  [@@noalloc]
 
 let%expect_test "basic unsafe_find" =
   let t = of_string "abc" in
@@ -523,7 +523,7 @@ external unsafe_memmem
   -> needle_len:int
   -> int
   = "bigstring_memmem_bytecode" "bigstring_memmem"
-[@@noalloc]
+  [@@noalloc]
 
 let%expect_test "basic unsafe_memmem" =
   let haystack = "foo bar baz qwux" |> of_string in
@@ -758,7 +758,7 @@ let%expect_test "unsafe_get_int64_le_exn correctness" =
     | `Raise ->
       Or_error.try_with convert
       |> require_error here (fun result ->
-        [%message "Unexpectedly successfully converted" (result : int)])
+           [%message "Unexpectedly successfully converted" (result : int)])
   in
   let max_val = Int64.of_int Int.max_value in
   let min_val = Int64.of_int Int.min_value in
@@ -839,7 +839,7 @@ let%bench_module "" =
         ignore
           (Sys.opaque_identity
              (with_poly_eq_int64_to_int_exn (Sys.opaque_identity some_int))
-           : int)
+            : int)
       done
     ;;
 
@@ -849,7 +849,7 @@ let%bench_module "" =
         ignore
           (Sys.opaque_identity
              (bit_manipulation_int64_to_int_exn (Sys.opaque_identity some_int))
-           : int)
+            : int)
       done
     ;;
 
@@ -858,7 +858,7 @@ let%bench_module "" =
       for _ = 1 to 1000 do
         ignore
           (Sys.opaque_identity (old_int64_to_int_exn (Sys.opaque_identity some_int))
-           : int)
+            : int)
       done
     ;;
 

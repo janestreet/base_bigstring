@@ -1,8 +1,6 @@
 (** String type based on [Bigarray], for use in I/O and C-bindings. *)
 
 open! Base
-
-
 open Stdlib.Bigarray
 
 (** {2 Types and exceptions} *)
@@ -28,7 +26,6 @@ val create : ?max_mem_waiting_gc_in_bytes:int -> int -> t
 
 (** [init n ~f] creates a bigstring [t] of length [n], with [t.{i} = f i]. *)
 val init : int -> f:(int -> char) -> t
-
 
 (** [of_string ?pos ?len str] @return a new bigstring that is equivalent
     to the substring of length [len] in [str] starting at position [pos].
@@ -99,7 +96,7 @@ external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 (** [is_mmapped bstr] @return whether the bigstring [bstr] is
     memory-mapped. *)
 external is_mmapped : t -> bool = "bigstring_is_mmapped_stub"
-[@@noalloc]
+  [@@noalloc]
 
 (** {2 Blitting} *)
 
@@ -114,13 +111,13 @@ val copy : t -> t
 
 module To_string : sig
   val blit : (t, bytes) Blit.blit
-  [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blit] instead"]
+    [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blit] instead"]
 
   val blito : (t, bytes) Blit.blito
-  [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blito] instead"]
+    [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blito] instead"]
 
   val unsafe_blit : (t, bytes) Blit.blit
-  [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.unsafe_blit] instead"]
+    [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.unsafe_blit] instead"]
 
   include Blit.S_to_string with type t := t
 end
@@ -156,11 +153,10 @@ val memcmp_bytes
     @param len default = [length bstr - pos] *)
 val find : ?pos:int -> ?len:int -> char -> t -> int option
 
-
 (** Same as [find], but does no bounds checking, and returns a negative value instead of
     [None] if [char] is not found. *)
 external unsafe_find : t -> char -> pos:int -> len:int -> int = "bigstring_find"
-[@@noalloc]
+  [@@noalloc]
 
 (** Search for the position of (a substring of) [needle] in (a substring of) [haystack]. *)
 val memmem
@@ -183,8 +179,7 @@ external unsafe_memmem
   -> needle_len:int
   -> int
   = "bigstring_memmem_bytecode" "bigstring_memmem"
-[@@noalloc]
-
+  [@@noalloc]
 
 (** {2 Accessors for parsing binary values, analogous to [Binary_packing]}
 
