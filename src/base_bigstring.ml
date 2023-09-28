@@ -355,7 +355,7 @@ external swap32 : int32 -> int32 = "%bswap_int32"
 external swap64 : (int64[@local]) -> int64 = "%bswap_int64"
 external unsafe_get_16 : t -> int -> int = "%caml_bigstring_get16u"
 external unsafe_get_32 : t -> int -> int32 = "%caml_bigstring_get32u"
-external unsafe_get_64 : t -> int -> int64 = "%caml_bigstring_get64u"
+external unsafe_get_64 : t -> int -> (int64[@local_opt]) = "%caml_bigstring_get64u"
 external unsafe_set_16 : (t[@local_opt]) -> int -> int -> unit = "%caml_bigstring_set16u"
 
 external unsafe_set_32
@@ -850,6 +850,13 @@ module Int_repr = struct
     let set_int32_ne t pos x = set_32 t pos x
     let get_int64_ne t pos = get_64 t pos
     let set_int64_ne t pos x = set_64 t pos x
+
+    module Local = struct
+      let get_int64_ne t pos =
+        check_args ~loc:"get_64" ~pos ~len:8 t;
+         (unsafe_get_64 t pos)
+      ;;
+    end
   end
 
   include Int_repr.Make_get (F)
@@ -867,6 +874,10 @@ module Int_repr = struct
       let set_int32_ne t pos x = unsafe_set_32 t pos x
       let get_int64_ne t pos = unsafe_get_64 t pos
       let set_int64_ne t pos x = unsafe_set_64 t pos x
+
+      module Local = struct
+        let get_int64_ne t pos =  (unsafe_get_64 t pos)
+      end
     end
 
     include Int_repr.Make_get (F)
