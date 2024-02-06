@@ -27,7 +27,7 @@ end
 
 include Bigstring0
 
-external aux_create : max_mem_waiting_gc_in_bytes:int -> size:int -> t = "bigstring_alloc"
+external aux_create : size:int -> t = "bigstring_alloc_v2"
 
 let sprintf = Printf.sprintf
 
@@ -36,14 +36,11 @@ let arch_sixtyfour = Stdlib.Sys.word_size = 64
 let arch_big_endian = Stdlib.Sys.big_endian
 let not_on_32bit = Stdlib.Sys.word_size > 32
 
-let create ?max_mem_waiting_gc_in_bytes size =
-  let max_mem_waiting_gc_in_bytes =
-    Option.value max_mem_waiting_gc_in_bytes ~default:(-1)
-  in
+let create size =
   (* This check is important because [aux_create ~size:(-1)] raises [Out_of_memory], which
      could be confusing during debugging. *)
   if size < 0 then invalid_arg (sprintf "create: size = %d < 0" size);
-  aux_create ~max_mem_waiting_gc_in_bytes ~size
+  aux_create ~size
 ;;
 
 let length = Array1.dim
@@ -234,38 +231,47 @@ let memset t ~pos ~len c =
 (* Comparison *)
 
 external unsafe_memcmp
-  :  (t[@local])
+  :  t
   -> pos1:int
-  -> (t[@local])
+  -> t
   -> pos2:int
   -> len:int
   -> int
   = "bigstring_memcmp_stub"
   [@@noalloc]
 
-let memcmp (t1 [@local]) ~pos1 (t2 [@local]) ~pos2 ~len =
+let memcmp t1 ~pos1 t2 ~pos2 ~len =
   Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
   Ordered_collection_common.check_pos_len_exn ~pos:pos2 ~len ~total_length:(length t2);
   unsafe_memcmp t1 ~pos1 t2 ~pos2 ~len
 ;;
 
 external unsafe_memcmp_bytes
-  :  (t[@local])
+  :  t
   -> pos1:int
-  -> (Bytes.t[@local])
+  -> Bytes.t
   -> pos2:int
   -> len:int
   -> int
   = "bigstring_memcmp_bytes_stub"
   [@@noalloc]
 
-let memcmp_bytes (t1 [@local]) ~pos1 (bytes [@local]) ~pos2 ~len =
-  Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
+let memcmp_bytes t ~pos1 bytes ~pos2 ~len =
+  Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t);
   Ordered_collection_common.check_pos_len_exn
     ~pos:pos2
     ~len
     ~total_length:(Bytes.length bytes);
-  unsafe_memcmp_bytes t1 ~pos1 bytes ~pos2 ~len
+  unsafe_memcmp_bytes t ~pos1 bytes ~pos2 ~len
+;;
+
+let memcmp_string t ~pos1 str ~pos2 ~len =
+  memcmp_bytes
+    t
+    ~pos1
+    (Bytes.unsafe_of_string_promise_no_mutation str)
+    ~pos2
+    ~len [@nontail]
 ;;
 
 let compare t1 t2 =
@@ -349,10 +355,10 @@ let memmem
 external int32_of_int : int -> int32 = "%int32_of_int"
 external int32_to_int : int32 -> int = "%int32_to_int"
 external int64_of_int : int -> int64 = "%int64_of_int"
-external int64_to_int : (int64[@local]) -> int = "%int64_to_int"
+external int64_to_int : int64 -> int = "%int64_to_int"
 external swap16 : int -> int = "%bswap16"
 external swap32 : int32 -> int32 = "%bswap_int32"
-external swap64 : (int64[@local]) -> int64 = "%bswap_int64"
+external swap64 : int64 -> int64 = "%bswap_int64"
 external unsafe_get_16 : t -> int -> int = "%caml_bigstring_get16u"
 external unsafe_get_32 : t -> int -> int32 = "%caml_bigstring_get32u"
 external unsafe_get_64 : t -> int -> (int64[@local_opt]) = "%caml_bigstring_get64u"
@@ -365,7 +371,7 @@ external unsafe_set_32
   -> unit
   = "%caml_bigstring_set32u"
 
-external unsafe_set_64 : t -> int -> (int64[@local]) -> unit = "%caml_bigstring_set64u"
+external unsafe_set_64 : t -> int -> int64 -> unit = "%caml_bigstring_set64u"
 
 let[@inline always] get_16 (t : t) (pos : int) : int =
   check_args ~loc:"get_16" ~pos ~len:2 t;
@@ -392,7 +398,7 @@ let[@inline always] set_32 (t : t) (pos : int) (v : int32) : unit =
   unsafe_set_32 t pos v
 ;;
 
-let[@inline always] set_64 (t : t) (pos : int) ((v : int64) [@local]) : unit =
+let[@inline always] set_64 (t : t) (pos : int) (v : int64) : unit =
   check_args ~loc:"set_64" ~pos ~len:8 t;
   unsafe_set_64 t pos v
 ;;
@@ -531,8 +537,8 @@ let[@inline always] read_int64_int t ~pos = int64_to_int (get_64 t pos)
 let[@inline always] read_int64_int_swap t ~pos = int64_to_int (swap64 (get_64 t pos))
 let[@inline always] read_int64 t ~pos = get_64 t pos
 let[@inline always] read_int64_swap t ~pos = swap64 (get_64 t pos)
-let write_int64 t ~pos (x [@local]) = set_64 t pos x
-let write_int64_swap t ~pos (x [@local]) = set_64 t pos (swap64 x)
+let write_int64 t ~pos x = set_64 t pos x
+let write_int64_swap t ~pos x = set_64 t pos (swap64 x)
 let write_int64_int t ~pos x = set_64 t pos (int64_of_int x)
 let write_int64_int_swap t ~pos x = set_64 t pos (swap64 (int64_of_int x))
 
@@ -671,19 +677,17 @@ let unsafe_set_int64_t_le =
 
 module Local = struct
   let[@inline always] unsafe_read_int64_local t ~pos =
-     (Int64.( + ) 0L (unsafe_read_int64 t ~pos))
+    Int64.( + ) 0L (unsafe_read_int64 t ~pos)
   ;;
 
   let[@inline always] unsafe_read_int64_swap_local t ~pos =
-     (Int64.( + ) 0L (unsafe_read_int64_swap t ~pos))
+    Int64.( + ) 0L (unsafe_read_int64_swap t ~pos)
   ;;
 
-  let[@inline always] read_int64_local t ~pos =
-     (Int64.( + ) 0L (read_int64 t ~pos))
-  ;;
+  let[@inline always] read_int64_local t ~pos = Int64.( + ) 0L (read_int64 t ~pos)
 
   let[@inline always] read_int64_swap_local t ~pos =
-     (Int64.( + ) 0L (read_int64_swap t ~pos))
+    Int64.( + ) 0L (read_int64_swap t ~pos)
   ;;
 
   let unsafe_get_int64_t_be =
@@ -711,7 +715,7 @@ let uint64_conv_error () =
   failwith "unsafe_read_uint64: value cannot be represented unboxed!"
 ;;
 
-let[@inline always] int64_to_int_exn (n [@local]) =
+let[@inline always] int64_to_int_exn n =
   let n' = int64_to_int n in
   (* The compiler will eliminate any boxing here. *)
   if Int64.( = ) (Int64.of_int n') n then n' else int64_conv_error ()
@@ -854,7 +858,7 @@ module Int_repr = struct
     module Local = struct
       let get_int64_ne t pos =
         check_args ~loc:"get_64" ~pos ~len:8 t;
-         (unsafe_get_64 t pos)
+        unsafe_get_64 t pos
       ;;
     end
   end
@@ -876,7 +880,7 @@ module Int_repr = struct
       let set_int64_ne t pos x = unsafe_set_64 t pos x
 
       module Local = struct
-        let get_int64_ne t pos =  (unsafe_get_64 t pos)
+        let get_int64_ne t pos = unsafe_get_64 t pos
       end
     end
 

@@ -83,23 +83,13 @@ static inline char * get_bstr(value v_bstr, value v_pos)
 }
 
 CAMLexport value
-bigstring_alloc (value v_gc_max_unused, value v_size)
+bigstring_alloc_v2 (value v_size)
 {
   intnat size = Long_val(v_size);
   void * data = NULL;
   int flags = BASE_BIGSTRING_FLAGS | CAML_BA_MANAGED;
-  intnat gc_max_unused = Long_val(v_gc_max_unused);
   intnat dims[1];
   dims[0] = size;
-
-  if (gc_max_unused >= 0) {
-    data = (void *) malloc(sizeof(char) * size);
-    if (NULL == data) caml_raise_out_of_memory ();
-    /* caml_adjust_gc_speed is also called by caml_ba_alloc below, but it will have
-    * numerator 0 when data != NULL. Effectively, that call will have no effect if this
-    * call is made. */
-    caml_adjust_gc_speed(size, gc_max_unused);
-  }
 
   return caml_ba_alloc (flags, 1, data, dims);
 }

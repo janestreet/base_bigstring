@@ -17,12 +17,9 @@ include Equal.S with type t := t
 (** {2 Creation and string conversion} *)
 
 (** [create length]
-    @param max_mem_waiting_gc default = 256 M in OCaml <= 3.12, 1 G otherwise. As
-    the total allocation of calls to [create] approach [max_mem_waiting_gc_in_bytes],
-    the pressure in the garbage collector to be more aggressive will increase.
     @return a new bigstring having [length].
     Content is undefined. *)
-val create : ?max_mem_waiting_gc_in_bytes:int -> int -> t
+val create : int -> t
 
 (** [init n ~f] creates a bigstring [t] of length [n], with [t.{i} = f i]. *)
 val init : int -> f:(int -> char) -> t
@@ -79,7 +76,7 @@ val get_opt_len : t -> pos:int -> int option -> int
 (** {2 Accessors} *)
 
 (** [length bstr] @return the length of bigstring [bstr]. *)
-val length : (t[@local]) -> int
+val length : t -> int
 
 (** [get t pos] returns the character at [pos] *)
 external get : t -> int -> char = "%caml_ba_ref_1"
@@ -129,20 +126,19 @@ module From_bytes : Blit.S_distinct with type src := bytes with type dst := t
 (** [memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)]. *)
 val memset : t -> pos:int -> len:int -> char -> unit
 
+val unsafe_memset : t -> pos:int -> len:int -> char -> unit
+
 (** Memcmp *)
 
 (** [memcmp t1 ~pos1 t2 ~pos2 ~len] is like [compare t1 t2] except performs the comparison
     on the subregions of [t1] and [t2] defined by [pos1], [pos2], and [len]. *)
-val memcmp : (t[@local]) -> pos1:int -> (t[@local]) -> pos2:int -> len:int -> int
+val memcmp : t -> pos1:int -> t -> pos2:int -> len:int -> int
 
 (** [memcmp_bytes], for efficient [memcmp] between [Bigstring] and [Bytes] data. *)
-val memcmp_bytes
-  :  (t[@local])
-  -> pos1:int
-  -> (Bytes.t[@local])
-  -> pos2:int
-  -> len:int
-  -> int
+val memcmp_bytes : t -> pos1:int -> Bytes.t -> pos2:int -> len:int -> int
+
+(** [memcmp_string], for efficient [memcmp] between [Bigstring] and [string] data. *)
+val memcmp_string : t -> pos1:int -> string -> pos2:int -> len:int -> int
 
 (** {2 Search} *)
 
@@ -210,7 +206,7 @@ val set_int8_exn : t -> pos:int -> int -> unit
 val get_uint8 : t -> pos:int -> int
 val set_uint8_exn : t -> pos:int -> int -> unit
 val unsafe_get_int8 : t -> pos:int -> int
-val unsafe_set_int8 : (t[@local]) -> pos:int -> int -> unit
+val unsafe_set_int8 : t -> pos:int -> int -> unit
 val unsafe_get_uint8 : t -> pos:int -> int
 val unsafe_set_uint8 : t -> pos:int -> int -> unit
 
@@ -222,8 +218,8 @@ val set_int16_le_exn : t -> pos:int -> int -> unit
 val set_int16_be_exn : t -> pos:int -> int -> unit
 val unsafe_get_int16_le : t -> pos:int -> int
 val unsafe_get_int16_be : t -> pos:int -> int
-val unsafe_set_int16_le : (t[@local]) -> pos:int -> int -> unit
-val unsafe_set_int16_be : (t[@local]) -> pos:int -> int -> unit
+val unsafe_set_int16_le : t -> pos:int -> int -> unit
+val unsafe_set_int16_be : t -> pos:int -> int -> unit
 val get_uint16_le : t -> pos:int -> int
 val get_uint16_be : t -> pos:int -> int
 val set_uint16_le_exn : t -> pos:int -> int -> unit
@@ -241,8 +237,8 @@ val set_int32_le_exn : t -> pos:int -> int -> unit
 val set_int32_be_exn : t -> pos:int -> int -> unit
 val unsafe_get_int32_le : t -> pos:int -> int
 val unsafe_get_int32_be : t -> pos:int -> int
-val unsafe_set_int32_le : (t[@local]) -> pos:int -> int -> unit
-val unsafe_set_int32_be : (t[@local]) -> pos:int -> int -> unit
+val unsafe_set_int32_le : t -> pos:int -> int -> unit
+val unsafe_set_int32_be : t -> pos:int -> int -> unit
 val get_uint32_le : t -> pos:int -> int
 val get_uint32_be : t -> pos:int -> int
 val set_uint32_le_exn : t -> pos:int -> int -> unit
@@ -299,18 +295,18 @@ val unsafe_set_int32_t_be : t -> pos:int -> Int32.t -> unit
 
 val get_int64_t_le : t -> pos:int -> Int64.t
 val get_int64_t_be : t -> pos:int -> Int64.t
-val set_int64_t_le : t -> pos:int -> (Int64.t[@local]) -> unit
-val set_int64_t_be : t -> pos:int -> (Int64.t[@local]) -> unit
+val set_int64_t_le : t -> pos:int -> Int64.t -> unit
+val set_int64_t_be : t -> pos:int -> Int64.t -> unit
 val unsafe_get_int64_t_le : t -> pos:int -> Int64.t
 val unsafe_get_int64_t_be : t -> pos:int -> Int64.t
-val unsafe_set_int64_t_le : t -> pos:int -> (Int64.t[@local]) -> unit
-val unsafe_set_int64_t_be : t -> pos:int -> (Int64.t[@local]) -> unit
+val unsafe_set_int64_t_le : t -> pos:int -> Int64.t -> unit
+val unsafe_set_int64_t_be : t -> pos:int -> Int64.t -> unit
 
 module Local : sig
-  val get_int64_t_le : t -> pos:int -> (Int64.t[@local])
-  val get_int64_t_be : t -> pos:int -> (Int64.t[@local])
-  val unsafe_get_int64_t_le : t -> pos:int -> (Int64.t[@local])
-  val unsafe_get_int64_t_be : t -> pos:int -> (Int64.t[@local])
+  val get_int64_t_le : t -> pos:int -> Int64.t
+  val get_int64_t_be : t -> pos:int -> Int64.t
+  val unsafe_get_int64_t_le : t -> pos:int -> Int64.t
+  val unsafe_get_int64_t_be : t -> pos:int -> Int64.t
 end
 
 module Int_repr : sig

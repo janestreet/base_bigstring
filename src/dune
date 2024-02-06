@@ -1,4 +1,12 @@
-(library (name base_bigstring) (public_name base_bigstring)
- (js_of_ocaml (javascript_files runtime.js)) (libraries base int_repr)
- (c_names base_bigstring_stubs) (ocamlopt_flags :standard -O3)
- (preprocess (pps ppx_jane)))
+(library
+ (foreign_stubs
+  (language c)
+  (names base_bigstring_stubs))
+ (name base_bigstring)
+ (public_name base_bigstring)
+ (js_of_ocaml
+  (javascript_files runtime.js))
+ (libraries base int_repr)
+ (ocamlopt_flags :standard -O3)
+ (preprocess
+  (pps ppx_jane)))

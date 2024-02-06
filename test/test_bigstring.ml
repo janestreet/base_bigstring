@@ -596,6 +596,7 @@ let%expect_test "basic get_opt_len" =
 
 let memcmp = memcmp
 let memcmp_bytes = memcmp_bytes
+let memcmp_string = memcmp_string
 
 let%test_module "basic memcmp" =
   (module struct
@@ -615,6 +616,10 @@ let%test_module "basic memcmp" =
     let%expect_test "bigstring to bytes" =
       test_memcmp ~memcmp:memcmp_bytes (of_string s1) (Bytes.of_string s2)
     ;;
+
+    let%expect_test "bigstring to string" =
+      test_memcmp ~memcmp:memcmp_string (of_string s1) s2
+    ;;
   end)
 ;;
 
@@ -633,12 +638,18 @@ let%expect_test "basic char setters" =
        (Ok (120 0 0 0 0 0 0 0))) |}]
 ;;
 
+let unsafe_memset = unsafe_memset
+
 external unsafe_set : t_frozen -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 
 let%expect_test "basic char unsafe setters" =
   try_setters
     'x'
-    [ memset ~len:0; memset ~len:1; memset ~len:2; (fun t ~pos -> set t pos) ]
+    [ unsafe_memset ~len:0
+    ; unsafe_memset ~len:1
+    ; unsafe_memset ~len:2
+    ; (fun t ~pos -> unsafe_set t pos)
+    ]
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
     {|
@@ -786,7 +797,7 @@ let%bench_module "" =
     *)
     let arch_sixtyfour = Stdlib.Sys.word_size = 64
 
-    external int64_to_int : (int64[@local]) -> int = "%int64_to_int"
+    external int64_to_int : int64 -> int = "%int64_to_int"
 
     let int64_conv_error () =
       failwith "unsafe_read_int64: value cannot be represented unboxed!"
@@ -795,7 +806,7 @@ let%bench_module "" =
     let some_int = 42L
 
     (* [Poly] is required so that we can compare unboxed [int64]. *)
-    let[@inline always] old_int64_to_int_exn (n [@local]) =
+    let[@inline always] old_int64_to_int_exn n =
       if arch_sixtyfour
       then
         if Poly.(n >= -0x4000_0000_0000_0000L && n < 0x4000_0000_0000_0000L)
@@ -806,7 +817,7 @@ let%bench_module "" =
       else int64_conv_error ()
     ;;
 
-    let[@inline always] bit_manipulation_int64_to_int_exn (n [@local]) =
+    let[@inline always] bit_manipulation_int64_to_int_exn n =
       if arch_sixtyfour
       then
         (*
@@ -828,7 +839,7 @@ let%bench_module "" =
       else int64_conv_error ()
     ;;
 
-    let[@inline always] with_poly_eq_int64_to_int_exn (n [@local]) =
+    let[@inline always] with_poly_eq_int64_to_int_exn n =
       let n' = int64_to_int n in
       if Poly.( = ) (Int64.of_int n') n then n' else int64_conv_error ()
     ;;

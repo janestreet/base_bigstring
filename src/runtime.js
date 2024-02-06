@@ -1,8 +1,8 @@
 ///////// BIGSTRING
 
-//Provides: bigstring_alloc
+//Provides: bigstring_alloc_v2
 //Requires: caml_ba_create
-function bigstring_alloc(_,size){
+function bigstring_alloc_v2(size){
   return caml_ba_create(12, 0, [0,size]);
 }
 
