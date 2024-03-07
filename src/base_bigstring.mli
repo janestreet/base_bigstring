@@ -126,6 +126,8 @@ module From_bytes : Blit.S_distinct with type src := bytes with type dst := t
 (** [memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)]. *)
 val memset : t -> pos:int -> len:int -> char -> unit
 
+(** [unsafe_memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)],
+    without bounds checks. *)
 val unsafe_memset : t -> pos:int -> len:int -> char -> unit
 
 (** Memcmp *)
@@ -302,11 +304,21 @@ val unsafe_get_int64_t_be : t -> pos:int -> Int64.t
 val unsafe_set_int64_t_le : t -> pos:int -> Int64.t -> unit
 val unsafe_set_int64_t_be : t -> pos:int -> Int64.t -> unit
 
+(** {2 String methods}
+
+    These are alternatives to [to_string] that follow the conventions of the int
+    accessors, and in particular avoid optional arguments. *)
+
+val get_string : t -> pos:int -> len:int -> string
+val unsafe_get_string : t -> pos:int -> len:int -> string
+
 module Local : sig
   val get_int64_t_le : t -> pos:int -> Int64.t
   val get_int64_t_be : t -> pos:int -> Int64.t
   val unsafe_get_int64_t_le : t -> pos:int -> Int64.t
   val unsafe_get_int64_t_be : t -> pos:int -> Int64.t
+  val get_string : t -> pos:int -> len:int -> string
+  val unsafe_get_string : t -> pos:int -> len:int -> string
 end
 
 module Int_repr : sig

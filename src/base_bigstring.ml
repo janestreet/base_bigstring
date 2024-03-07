@@ -675,6 +675,18 @@ let unsafe_set_int64_t_le =
   if arch_big_endian then unsafe_write_int64_swap else unsafe_write_int64
 ;;
 
+let get_string t ~pos ~len =
+  let bytes = Bytes.create len in
+  To_bytes.blit ~src:t ~src_pos:pos ~dst:bytes ~dst_pos:0 ~len;
+  Bytes.unsafe_to_string ~no_mutation_while_string_reachable:bytes
+;;
+
+let unsafe_get_string t ~pos ~len =
+  let bytes = Bytes.create len in
+  To_bytes.unsafe_blit ~src:t ~src_pos:pos ~dst:bytes ~dst_pos:0 ~len;
+  Bytes.unsafe_to_string ~no_mutation_while_string_reachable:bytes
+;;
+
 module Local = struct
   let[@inline always] unsafe_read_int64_local t ~pos =
     Int64.( + ) 0L (unsafe_read_int64 t ~pos)
@@ -700,6 +712,18 @@ module Local = struct
 
   let get_int64_t_be = if arch_big_endian then read_int64_local else read_int64_swap_local
   let get_int64_t_le = if arch_big_endian then read_int64_swap_local else read_int64_local
+
+  let get_string t ~pos ~len =
+    let bytes = Bytes.create_local len in
+    To_bytes.blit ~src:t ~src_pos:pos ~dst:bytes ~dst_pos:0 ~len;
+    Bytes.unsafe_to_string ~no_mutation_while_string_reachable:bytes
+  ;;
+
+  let unsafe_get_string t ~pos ~len =
+    let bytes = Bytes.create_local len in
+    To_bytes.unsafe_blit ~src:t ~src_pos:pos ~dst:bytes ~dst_pos:0 ~len;
+    Bytes.unsafe_to_string ~no_mutation_while_string_reachable:bytes
+  ;;
 end
 
 let get_int64_t_be = if arch_big_endian then read_int64 else read_int64_swap

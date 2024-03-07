@@ -155,6 +155,8 @@ module Local = struct
   let get_int64_t_be = get_int64_t_be
   let unsafe_get_int64_t_le = unsafe_get_int64_t_le
   let unsafe_get_int64_t_be = unsafe_get_int64_t_be
+  let get_string = get_string
+  let unsafe_get_string = unsafe_get_string
 end
 
 let%test_module "truncating setters (should end in [_trunc] or begin with [unsafe_])" =
@@ -483,6 +485,32 @@ let%expect_test "basic int getters" =
        (Ok 0x4030201) (Ok 0x1020304) (Ok 0x4030201) (Ok 0x102) (Ok 0x201)
        (Ok 0x102) (Ok 0x201) (Ok 0x102) (Ok 0x201) (Ok 0x102) (Ok 0x201) (Ok 0x1)
        (Ok 0x1) (Ok 0x1) (Ok 0x1)) |}]
+;;
+
+let get_string = get_string
+let unsafe_get_string = unsafe_get_string
+
+let%expect_test "basic string getters" =
+  for len = 0 to 4 do
+    try_getters
+      ~first_bigstring_byte:1
+      [ get_string ~len
+      ; unsafe_get_string ~len
+      ; (fun t ~pos -> (Local.get_string t ~pos ~len |> globalize_string) [@nontail])
+      ; (fun t ~pos ->
+          (Local.unsafe_get_string t ~pos ~len |> globalize_string) [@nontail])
+      ]
+    |> printf !"%{sexp#hum:string Or_error.t list}\n"
+  done;
+  [%expect
+    {|
+    ((Ok "") (Ok "") (Ok "") (Ok ""))
+    ((Ok "\001") (Ok "\001") (Ok "\001") (Ok "\001"))
+    ((Ok "\001\002") (Ok "\001\002") (Ok "\001\002") (Ok "\001\002"))
+    ((Ok "\001\002\003") (Ok "\001\002\003") (Ok "\001\002\003")
+     (Ok "\001\002\003"))
+    ((Ok "\001\002\003\004") (Ok "\001\002\003\004") (Ok "\001\002\003\004")
+     (Ok "\001\002\003\004")) |}]
 ;;
 
 external unsafe_find : t_frozen -> char -> pos:int -> len:int -> int = "bigstring_find"
