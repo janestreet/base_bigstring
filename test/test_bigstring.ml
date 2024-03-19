@@ -223,65 +223,81 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
       test get_int64_le_trunc;
       [%expect
         {|
-          0x887868584838281 (= 614607782171345537)
-          0x48c7c6c5c4c3c2c1 (= -3978993193046523199) |}];
+        0x887868584838281 (= 614607782171345537)
+        0x48c7c6c5c4c3c2c1 (= -3978993193046523199)
+        |}];
       test get_int64_be_trunc;
       [%expect
         {|
-          0x182838485868788 (= 108793946209421192)
-          0x41c2c3c4c5c6c7c8 (= -4484807029008447544) |}];
+        0x182838485868788 (= 108793946209421192)
+        0x41c2c3c4c5c6c7c8 (= -4484807029008447544)
+        |}];
       test unsafe_get_int64_le_trunc;
       [%expect
         {|
-          0x887868584838281 (= 614607782171345537)
-          0x48c7c6c5c4c3c2c1 (= -3978993193046523199) |}];
+        0x887868584838281 (= 614607782171345537)
+        0x48c7c6c5c4c3c2c1 (= -3978993193046523199)
+        |}];
       test unsafe_get_int64_be_trunc;
       [%expect
         {|
-          0x182838485868788 (= 108793946209421192)
-          0x41c2c3c4c5c6c7c8 (= -4484807029008447544) |}]
+        0x182838485868788 (= 108793946209421192)
+        0x41c2c3c4c5c6c7c8 (= -4484807029008447544)
+        |}]
     ;;
 
     let%expect_test ("31-bit int" [@tags "32-bits-only", "no-js"]) =
       test get_int64_le_trunc;
-      [%expect {|
-          0x4838281 (= 75727489)
-          0x44c3c2c1 (= -993803583) |}];
+      [%expect
+        {|
+        0x4838281 (= 75727489)
+        0x44c3c2c1 (= -993803583)
+        |}];
       test get_int64_be_trunc;
-      [%expect {|
-          0x5868788 (= 92702600)
-          0x45c6c7c8 (= -976828472) |}];
+      [%expect
+        {|
+        0x5868788 (= 92702600)
+        0x45c6c7c8 (= -976828472)
+        |}];
       test unsafe_get_int64_le_trunc;
-      [%expect {|
-          0x4838281 (= 75727489)
-          0x44c3c2c1 (= -993803583) |}];
+      [%expect
+        {|
+        0x4838281 (= 75727489)
+        0x44c3c2c1 (= -993803583)
+        |}];
       test unsafe_get_int64_be_trunc;
-      [%expect {|
-          0x5868788 (= 92702600)
-          0x45c6c7c8 (= -976828472) |}]
+      [%expect
+        {|
+        0x5868788 (= 92702600)
+        0x45c6c7c8 (= -976828472)
+        |}]
     ;;
 
     let%expect_test ("32-bit int" [@tags "js-only"]) =
       test get_int64_le_trunc;
       [%expect
         {|
-          0x84838281 (= -2071756159)
-          0xc4c3c2c1 (= -993803583) |}];
+        0x84838281 (= -2071756159)
+        0xc4c3c2c1 (= -993803583)
+        |}];
       test get_int64_be_trunc;
       [%expect
         {|
-          0x85868788 (= -2054781048)
-          0xc5c6c7c8 (= -976828472) |}];
+        0x85868788 (= -2054781048)
+        0xc5c6c7c8 (= -976828472)
+        |}];
       test unsafe_get_int64_le_trunc;
       [%expect
         {|
-          0x84838281 (= -2071756159)
-          0xc4c3c2c1 (= -993803583) |}];
+        0x84838281 (= -2071756159)
+        0xc4c3c2c1 (= -993803583)
+        |}];
       test unsafe_get_int64_be_trunc;
       [%expect
         {|
-          0x85868788 (= -2054781048)
-          0xc5c6c7c8 (= -976828472) |}]
+        0x85868788 (= -2054781048)
+        0xc5c6c7c8 (= -976828472)
+        |}]
     ;;
   end)
 ;;
@@ -359,8 +375,9 @@ let%expect_test "basic int64 setters" =
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
     {|
-      ((Ok (1 2 3 4 5 6 7 8)) (Ok (8 7 6 5 4 3 2 1)) (Ok (1 2 3 4 5 6 7 8))
-       (Ok (8 7 6 5 4 3 2 1))) |}]
+    ((Ok (1 2 3 4 5 6 7 8)) (Ok (8 7 6 5 4 3 2 1)) (Ok (1 2 3 4 5 6 7 8))
+     (Ok (8 7 6 5 4 3 2 1)))
+    |}]
 ;;
 
 let unsafe_get_int64_t_be = unsafe_get_int64_t_be
@@ -383,9 +400,10 @@ let%expect_test "basic int64 getters" =
   |> printf !"%{sexp#hum:Int64.Hex.t Or_error.t list}\n";
   [%expect
     {|
-      ((Ok 0x102030405060708) (Ok 0x807060504030201) (Ok 0x102030405060708)
-       (Ok 0x807060504030201) (Ok 0x102030405060708) (Ok 0x807060504030201)
-       (Ok 0x102030405060708) (Ok 0x807060504030201)) |}]
+    ((Ok 0x102030405060708) (Ok 0x807060504030201) (Ok 0x102030405060708)
+     (Ok 0x807060504030201) (Ok 0x102030405060708) (Ok 0x807060504030201)
+     (Ok 0x102030405060708) (Ok 0x807060504030201))
+    |}]
 ;;
 
 let unsafe_set_int32_t_be = unsafe_set_int32_t_be
@@ -400,8 +418,9 @@ let%expect_test "basic int32 setters" =
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
     {|
-      ((Ok (1 2 3 4 0 0 0 0)) (Ok (4 3 2 1 0 0 0 0)) (Ok (1 2 3 4 0 0 0 0))
-       (Ok (4 3 2 1 0 0 0 0))) |}]
+    ((Ok (1 2 3 4 0 0 0 0)) (Ok (4 3 2 1 0 0 0 0)) (Ok (1 2 3 4 0 0 0 0))
+     (Ok (4 3 2 1 0 0 0 0)))
+    |}]
 ;;
 
 let unsafe_get_int32_t_be = unsafe_get_int32_t_be
@@ -429,8 +448,9 @@ let%expect_test "basic int setters" =
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
     {|
-      ((Ok (0 0 0 0 1 2 3 4)) (Ok (4 3 2 1 0 0 0 0)) (Ok (0 0 0 0 1 2 3 4))
-       (Ok (4 3 2 1 0 0 0 0))) |}]
+    ((Ok (0 0 0 0 1 2 3 4)) (Ok (4 3 2 1 0 0 0 0)) (Ok (0 0 0 0 1 2 3 4))
+     (Ok (4 3 2 1 0 0 0 0)))
+    |}]
 ;;
 
 let unsafe_get_uint32_be = unsafe_get_uint32_be
@@ -481,10 +501,11 @@ let%expect_test "basic int getters" =
   |> printf !"%{sexp#hum:Int.Hex.t Or_error.t list}\n";
   [%expect
     {|
-      ((Ok 0x1020304) (Ok 0x4030201) (Ok 0x1020304) (Ok 0x4030201) (Ok 0x1020304)
-       (Ok 0x4030201) (Ok 0x1020304) (Ok 0x4030201) (Ok 0x102) (Ok 0x201)
-       (Ok 0x102) (Ok 0x201) (Ok 0x102) (Ok 0x201) (Ok 0x102) (Ok 0x201) (Ok 0x1)
-       (Ok 0x1) (Ok 0x1) (Ok 0x1)) |}]
+    ((Ok 0x1020304) (Ok 0x4030201) (Ok 0x1020304) (Ok 0x4030201) (Ok 0x1020304)
+     (Ok 0x4030201) (Ok 0x1020304) (Ok 0x4030201) (Ok 0x102) (Ok 0x201)
+     (Ok 0x102) (Ok 0x201) (Ok 0x102) (Ok 0x201) (Ok 0x102) (Ok 0x201) (Ok 0x1)
+     (Ok 0x1) (Ok 0x1) (Ok 0x1))
+    |}]
 ;;
 
 let get_string = get_string
@@ -510,7 +531,8 @@ let%expect_test "basic string getters" =
     ((Ok "\001\002\003") (Ok "\001\002\003") (Ok "\001\002\003")
      (Ok "\001\002\003"))
     ((Ok "\001\002\003\004") (Ok "\001\002\003\004") (Ok "\001\002\003\004")
-     (Ok "\001\002\003\004")) |}]
+     (Ok "\001\002\003\004"))
+    |}]
 ;;
 
 external unsafe_find : t_frozen -> char -> pos:int -> len:int -> int = "bigstring_find"
@@ -662,8 +684,9 @@ let%expect_test "basic char setters" =
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
     {|
-      ((Ok (0 0 0 0 0 0 0 0)) (Ok (120 0 0 0 0 0 0 0)) (Ok (120 120 0 0 0 0 0 0))
-       (Ok (120 0 0 0 0 0 0 0))) |}]
+    ((Ok (0 0 0 0 0 0 0 0)) (Ok (120 0 0 0 0 0 0 0)) (Ok (120 120 0 0 0 0 0 0))
+     (Ok (120 0 0 0 0 0 0 0)))
+    |}]
 ;;
 
 let unsafe_memset = unsafe_memset
@@ -681,8 +704,9 @@ let%expect_test "basic char unsafe setters" =
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
     {|
-      ((Ok (0 0 0 0 0 0 0 0)) (Ok (120 0 0 0 0 0 0 0)) (Ok (120 120 0 0 0 0 0 0))
-       (Ok (120 0 0 0 0 0 0 0))) |}]
+    ((Ok (0 0 0 0 0 0 0 0)) (Ok (120 0 0 0 0 0 0 0)) (Ok (120 120 0 0 0 0 0 0))
+     (Ok (120 0 0 0 0 0 0 0)))
+    |}]
 ;;
 
 external get : t_frozen -> int -> char = "%caml_ba_ref_1"
@@ -730,18 +754,19 @@ let%expect_test "basic concat" =
           print_s [%message (sep : t option) (ts : t list) ~concat:(concat ?sep ts : t)]));
   [%expect
     {|
-      ((sep ())
-       (ts  ())
-       (concat ""))
-      ((sep ()) (ts (fst1)) (concat fst1))
-      ((sep ()) (ts (fst snd)) (concat fstsnd))
-      ((sep ()) (ts (fst3 snd3 trd)) (concat fst3snd3trd))
-      ((sep ("; ")) (ts ()) (concat ""))
-      ((sep ("; "))
-       (ts  (fst1))
-       (concat fst1))
-      ((sep ("; ")) (ts (fst snd)) (concat "fst; snd"))
-      ((sep ("; ")) (ts (fst3 snd3 trd)) (concat "fst3; snd3; trd")) |}]
+    ((sep ())
+     (ts  ())
+     (concat ""))
+    ((sep ()) (ts (fst1)) (concat fst1))
+    ((sep ()) (ts (fst snd)) (concat fstsnd))
+    ((sep ()) (ts (fst3 snd3 trd)) (concat fst3snd3trd))
+    ((sep ("; ")) (ts ()) (concat ""))
+    ((sep ("; "))
+     (ts  (fst1))
+     (concat fst1))
+    ((sep ("; ")) (ts (fst snd)) (concat "fst; snd"))
+    ((sep ("; ")) (ts (fst3 snd3 trd)) (concat "fst3; snd3; trd"))
+    |}]
 ;;
 
 let equal = equal
