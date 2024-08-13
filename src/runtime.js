@@ -83,6 +83,17 @@ function bigstring_find(bs, chr, pos, len){
   return -1;
 }
 
+//Provides: bigstring_rfind
+//Requires: caml_ba_get_1
+function bigstring_rfind(bs, chr, pos, len){
+  var cur = pos + len - 1;
+  while(cur >= pos){
+    if(caml_ba_get_1(bs,cur) == chr) return cur;
+    cur--;
+  }
+  return -1;
+}
+
 //Provides: bigstring_memmem_bytecode
 //Requires: caml_ba_get_1
 function bigstring_memmem_bytecode(haystack, needle, haystack_pos, haystack_len, needle_pos, needle_len){

@@ -6,7 +6,7 @@
  (public_name base_bigstring)
  (js_of_ocaml
   (javascript_files runtime.js))
- (libraries base int_repr)
+ (libraries base int_repr sexplib)
  (ocamlopt_flags :standard -O3)
  (preprocess
   (pps ppx_jane)))

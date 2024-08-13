@@ -3,6 +3,7 @@ open Base_bigstring
 
 let length = length
 let create = create
+let empty = empty
 
 module Bigstring_sequence = struct
   type nonrec t = t
@@ -17,7 +18,7 @@ module Bytes_sequence = struct
   type t = bytes [@@deriving sexp_of]
 
   let create ~len = Bytes.create len
-  let get = Bytes.get
+  let get t i = Bytes.get t i
   let set = Bytes.set
   let length = Bytes.length
 end
@@ -76,6 +77,7 @@ let sexp_of_t = sexp_of_t
 let of_string = of_string
 let of_bytes = of_bytes
 let t_of_sexp = t_of_sexp
+let t_sexp_grammar = t_sexp_grammar
 
 let%test_unit "roundtrip" =
   let string_gen =
@@ -121,9 +123,9 @@ let%expect_test "checking setters (should end in [_exn])" =
   let test setters z =
     try_setters z setters
     |> List.iteri ~f:(fun i -> function
-         | Ok bytes ->
-           raise_s [%message "didn't raise" (z : Int.Hex.t) (i : int) (bytes : int list)]
-         | Error _ -> ())
+      | Ok bytes ->
+        raise_s [%message "didn't raise" (z : Int.Hex.t) (i : int) (bytes : int list)]
+      | Error _ -> ())
   in
   test [ set_int8_exn ] 0x80;
   test [ set_uint8_exn ] (-1);
@@ -164,8 +166,8 @@ let%test_module "truncating setters (should end in [_trunc] or begin with [unsaf
     let test setters z =
       try_setters z setters
       |> List.iter ~f:(fun t ->
-           Or_error.ok_exn t |> List.iter ~f:(printf "%x ");
-           printf "; ")
+        Or_error.ok_exn t |> List.iter ~f:(printf "%x ");
+        printf "; ")
     ;;
 
     let%expect_test "all word sizes" =
@@ -213,10 +215,10 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
         ; 0xc1 (* negative if top bit truncated *)
         ]
         ~f:(fun first_byte ->
-        let i = getter (getter_t ~first_byte) ~pos:0 in
-        (* Signed hex is not clear; make sure the hex is unsigned.  Include the signed
+          let i = getter (getter_t ~first_byte) ~pos:0 in
+          (* Signed hex is not clear; make sure the hex is unsigned.  Include the signed
              decimal form mainly to indicate the sign. *)
-        printf !"0x%x (= %d)\n" i i)
+          printf !"0x%x (= %d)\n" i i)
     ;;
 
     let%expect_test ("63-bit int" [@tags "64-bits-only"]) =
@@ -246,7 +248,7 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
         |}]
     ;;
 
-    let%expect_test ("31-bit int" [@tags "32-bits-only", "no-js"]) =
+    let%expect_test ("31-bit int" [@tags "wasm-only"]) =
       test get_int64_le_trunc;
       [%expect
         {|
@@ -273,7 +275,7 @@ let%test_module "truncating getters (should end in [_trunc] or begin with [unsaf
         |}]
     ;;
 
-    let%expect_test ("32-bit int" [@tags "js-only"]) =
+    let%expect_test ("32-bit int" [@tags "js-only", "no-wasm"]) =
       test get_int64_le_trunc;
       [%expect
         {|
@@ -321,8 +323,8 @@ let%expect_test "checking getters (should end in [_exn])" =
   let test getters ~first_bigstring_byte =
     try_getters getters ~first_bigstring_byte
     |> List.iteri ~f:(fun i -> function
-         | Ok z -> raise_s [%message "didn't raise" (i : int) (z : Int.Hex.t)]
-         | Error _ -> ())
+      | Ok z -> raise_s [%message "didn't raise" (i : int) (z : Int.Hex.t)]
+      | Error _ -> ())
   in
   test
     (* These should check that the 64th bit in the string representation is redundant, so
@@ -536,32 +538,87 @@ let%expect_test "basic string getters" =
 ;;
 
 external unsafe_find : t_frozen -> char -> pos:int -> len:int -> int = "bigstring_find"
-  [@@noalloc]
+[@@noalloc]
 
 let%expect_test "basic unsafe_find" =
-  let t = of_string "abc" in
+  let t = of_string "abcba" in
   [%test_result: int] ~expect:1 (unsafe_find t 'b' ~pos:1 ~len:1);
   [%test_result: int] ~expect:1 (unsafe_find t 'b' ~pos:1 ~len:2);
+  [%test_result: int] ~expect:3 (unsafe_find t 'b' ~pos:2 ~len:2);
+  [%test_pred: int] Int.is_negative (unsafe_find t 'b' ~pos:2 ~len:1);
   [%test_pred: int] Int.is_negative (unsafe_find t 'd' ~pos:1 ~len:2)
 ;;
 
 let find = find
 
 let%expect_test "basic find" =
-  let t = of_string "abc" in
-  [%test_result: int option] ~expect:(Some 1) (find 'b' t ~pos:1 ~len:1);
+  let t = of_string "abcba" in
   [%test_result: int option] ~expect:None (find 'b' t ~pos:1 ~len:0);
-  require_does_raise [%here] (fun () -> find 'b' t ~len:4);
-  [%expect {| (Invalid_argument "Bigstring.find: length(bstr) < pos + len") |}];
-  require_does_raise [%here] (fun () -> find 'd' t ~len:4);
-  [%expect {| (Invalid_argument "Bigstring.find: length(bstr) < pos + len") |}];
+  [%test_result: int option] ~expect:(Some 1) (find 'b' t ~pos:1 ~len:1);
   [%test_result: int option] ~expect:(Some 1) (find 'b' t ~pos:1 ~len:2);
+  [%test_result: int option] ~expect:(Some 1) (find 'b' t ~pos:1 ~len:3);
+  [%test_result: int option] ~expect:(Some 1) (find 'b' t ~pos:1 ~len:4);
+  require_does_raise (fun () -> find 'b' t ~pos:1 ~len:5);
+  [%expect {| (Invalid_argument "Bigstring.find: length(bstr) < pos + len") |}];
+  require_does_raise (fun () -> find 'd' t ~len:6);
+  [%expect {| (Invalid_argument "Bigstring.find: length(bstr) < pos + len") |}];
+  [%test_result: int option] ~expect:None (find 'b' t ~pos:2 ~len:1);
+  [%test_result: int option] ~expect:(Some 3) (find 'b' t ~pos:2 ~len:2);
+  [%test_result: int option] ~expect:(Some 3) (find 'b' t ~pos:2 ~len:3);
   [%test_result: int option] ~expect:None (find 'd' t ~pos:1 ~len:2);
   [%test_result: int option] ~expect:None (find 'b' t ~len:1);
   [%test_result: int option] ~expect:(Some 1) (find 'b' t ~pos:1);
+  [%test_result: int option] ~expect:(Some 3) (find 'b' t ~pos:2);
+  [%test_result: int option] ~expect:(Some 3) (find 'b' t ~pos:3);
   [%test_result: int option] ~expect:None (find 'd' t);
-  require_does_raise [%here] (fun () -> find 'b' t ~pos:4);
+  require_does_raise (fun () -> find 'b' t ~pos:6);
   [%expect {| (Invalid_argument "find: len < 0") |}]
+;;
+
+external unsafe_rfind
+  :  (t_frozen[@local_opt])
+  -> char
+  -> pos:int
+  -> len:int
+  -> int
+  = "bigstring_rfind"
+[@@noalloc]
+
+let%expect_test "basic unsafe_rfind" =
+  let t = of_string "abcba" in
+  [%test_result: int] ~expect:1 (unsafe_rfind t 'b' ~pos:1 ~len:1);
+  [%test_result: int] ~expect:1 (unsafe_rfind t 'b' ~pos:1 ~len:2);
+  [%test_result: int] ~expect:3 (unsafe_rfind t 'b' ~pos:1 ~len:3);
+  [%test_result: int] ~expect:3 (unsafe_rfind t 'b' ~pos:1 ~len:4);
+  [%test_result: int] ~expect:3 (unsafe_rfind t 'b' ~pos:3 ~len:1);
+  [%test_pred: int] Int.is_negative (unsafe_rfind t 'b' ~pos:4 ~len:1);
+  [%test_pred: int] Int.is_negative (unsafe_rfind t 'd' ~pos:1 ~len:2)
+;;
+
+let rfind = rfind
+
+let%expect_test "basic rfind" =
+  let t = of_string "abcba" in
+  [%test_result: int option] ~expect:None (rfind 'b' t ~pos:1 ~len:0);
+  [%test_result: int option] ~expect:(Some 1) (rfind 'b' t ~pos:1 ~len:1);
+  [%test_result: int option] ~expect:(Some 1) (rfind 'b' t ~pos:1 ~len:2);
+  [%test_result: int option] ~expect:(Some 3) (rfind 'b' t ~pos:1 ~len:3);
+  [%test_result: int option] ~expect:(Some 3) (rfind 'b' t ~pos:1 ~len:4);
+  require_does_raise (fun () -> rfind 'b' t ~pos:1 ~len:5);
+  [%expect {| (Invalid_argument "Bigstring.rfind: length(bstr) < pos + len") |}];
+  require_does_raise (fun () -> rfind 'd' t ~len:6);
+  [%expect {| (Invalid_argument "Bigstring.rfind: length(bstr) < pos + len") |}];
+  [%test_result: int option] ~expect:None (rfind 'b' t ~pos:2 ~len:1);
+  [%test_result: int option] ~expect:(Some 3) (rfind 'b' t ~pos:2 ~len:2);
+  [%test_result: int option] ~expect:(Some 3) (rfind 'b' t ~pos:2 ~len:3);
+  [%test_result: int option] ~expect:None (rfind 'd' t ~pos:1 ~len:2);
+  [%test_result: int option] ~expect:None (rfind 'b' t ~len:1);
+  [%test_result: int option] ~expect:(Some 3) (rfind 'b' t ~pos:1);
+  [%test_result: int option] ~expect:(Some 3) (rfind 'b' t ~pos:2);
+  [%test_result: int option] ~expect:(Some 3) (rfind 'b' t ~pos:3);
+  [%test_result: int option] ~expect:None (rfind 'd' t);
+  require_does_raise (fun () -> rfind 'b' t ~pos:6);
+  [%expect {| (Invalid_argument "rfind: len < 0") |}]
 ;;
 
 external unsafe_memmem
@@ -573,7 +630,7 @@ external unsafe_memmem
   -> needle_len:int
   -> int
   = "bigstring_memmem_bytecode" "bigstring_memmem"
-  [@@noalloc]
+[@@noalloc]
 
 let%expect_test "basic unsafe_memmem" =
   let haystack = "foo bar baz qwux" |> of_string in
@@ -680,7 +737,7 @@ external set : t_frozen -> int -> char -> unit = "%caml_ba_set_1"
 let%expect_test "basic char setters" =
   try_setters
     'x'
-    [ memset ~len:0; memset ~len:1; memset ~len:2; (fun t ~pos -> set t pos) ]
+    [ memset ~len:0; memset ~len:1; memset ~len:2; (fun t ~pos x -> set t pos x) ]
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
     {|
@@ -699,7 +756,7 @@ let%expect_test "basic char unsafe setters" =
     [ unsafe_memset ~len:0
     ; unsafe_memset ~len:1
     ; unsafe_memset ~len:2
-    ; (fun t ~pos -> unsafe_set t pos)
+    ; (fun t ~pos x -> unsafe_set t pos x)
     ]
   |> printf !"%{sexp#hum:int list Or_error.t list}\n";
   [%expect
@@ -728,15 +785,13 @@ let%expect_test "basic unsafe char getters" =
 let check_args = check_args
 
 let%expect_test "basic check_args" =
-  require_does_raise [%here] (fun () ->
+  require_does_raise (fun () ->
     check_args ~loc:"LOC" ~pos:Int.max_value ~len:2 (of_string "abc"));
   [%expect {| (Invalid_argument "Bigstring.LOC: length(bstr) < pos + len") |}];
   check_args ~loc:"LOC" ~pos:0 ~len:0 (of_string "");
-  require_does_raise [%here] (fun () ->
-    check_args ~loc:"LOC" ~pos:1 ~len:0 (of_string ""));
+  require_does_raise (fun () -> check_args ~loc:"LOC" ~pos:1 ~len:0 (of_string ""));
   [%expect {| (Invalid_argument "Bigstring.LOC: length(bstr) < pos + len") |}];
-  require_does_raise [%here] (fun () ->
-    check_args ~loc:"LOC" ~pos:0 ~len:1 (of_string ""));
+  require_does_raise (fun () -> check_args ~loc:"LOC" ~pos:0 ~len:1 (of_string ""));
   [%expect {| (Invalid_argument "Bigstring.LOC: length(bstr) < pos + len") |}];
   check_args ~loc:"LOC" ~pos:0 ~len:0 (of_string "STRING")
 ;;
@@ -770,7 +825,9 @@ let%expect_test "basic concat" =
 ;;
 
 let equal = equal
+let equal__local = equal__local
 let compare = compare
+let compare__local = compare__local
 
 let%expect_test "basic equal" =
   let strings = [ ""; "a"; "aa"; "ab"; "b"; "ba"; "bb" ] in
@@ -779,13 +836,11 @@ let%expect_test "basic equal" =
     let test s2 =
       let t2 = of_string s2 in
       require_equal
-        [%here]
         (module Bool)
         (equal t1 t2)
         (String.equal s1 s2)
         ~if_false_then_print_s:(lazy [%message (s1 : string) (s2 : string)]);
       require_equal
-        [%here]
         (module Int)
         (compare t1 t2)
         (String.compare s1 s2)
@@ -797,11 +852,11 @@ let%expect_test "basic equal" =
 
 let%expect_test ("local allocation does not heap allocate" [@tags "64-bits-only"]) =
   let t = init 8 ~f:Char.of_int_exn in
-  Expect_test_helpers_core.require_no_allocation [%here] (fun () ->
+  Expect_test_helpers_core.require_no_allocation (fun () ->
     let x = Local.get_int64_t_be t ~pos:0 in
     set_int64_t_be t ~pos:0 x [@nontail]);
   [%expect ""];
-  Expect_test_helpers_core.require_no_allocation [%here] (fun () ->
+  Expect_test_helpers_core.require_no_allocation (fun () ->
     let x = Local.get_int64_t_le t ~pos:0 in
     set_int64_t_le t ~pos:0 x [@nontail]);
   [%expect ""]
@@ -814,15 +869,15 @@ let%expect_test "unsafe_get_int64_le_exn correctness" =
       set_int64_t_le t ~pos:0 i;
       let result = unsafe_get_int64_le_exn t ~pos:0 in
       let expected = Int.of_int64_trunc i in
-      require_equal here (module Int) expected result;
+      require_equal ~here (module Int) expected result;
       result
     in
     match behavior with
-    | `Fit -> require_does_not_raise here (fun () -> ignore (convert () : int))
+    | `Fit -> require_does_not_raise ~here (fun () -> ignore (convert () : int))
     | `Raise ->
       Or_error.try_with convert
-      |> require_error here (fun result ->
-           [%message "Unexpectedly successfully converted" (result : int)])
+      |> require_error ~here (fun result ->
+        [%message "Unexpectedly successfully converted" (result : int)])
   in
   let max_val = Int64.of_int Int.max_value in
   let min_val = Int64.of_int Int.min_value in
@@ -903,7 +958,7 @@ let%bench_module "" =
         ignore
           (Sys.opaque_identity
              (with_poly_eq_int64_to_int_exn (Sys.opaque_identity some_int))
-            : int)
+           : int)
       done
     ;;
 
@@ -913,7 +968,7 @@ let%bench_module "" =
         ignore
           (Sys.opaque_identity
              (bit_manipulation_int64_to_int_exn (Sys.opaque_identity some_int))
-            : int)
+           : int)
       done
     ;;
 
@@ -922,7 +977,7 @@ let%bench_module "" =
       for _ = 1 to 1000 do
         ignore
           (Sys.opaque_identity (old_int64_to_int_exn (Sys.opaque_identity some_int))
-            : int)
+           : int)
       done
     ;;
 
@@ -940,7 +995,7 @@ let%bench_module "" =
 ;;
 
 type nonrec t = t
-type nonrec t_frozen = t_frozen [@@deriving compare, hash, sexp]
+type nonrec t_frozen = t_frozen [@@deriving compare ~localize, hash, sexp, sexp_grammar]
 
 (* Effectively tested in lib/int_repr *)
 module Int_repr = Base_bigstring.Int_repr

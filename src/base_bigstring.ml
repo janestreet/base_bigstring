@@ -3,9 +3,9 @@ open! Base
 module Bigstring0 = struct
   type t =
     ( char
-    , Stdlib.Bigarray.int8_unsigned_elt
-    , Stdlib.Bigarray.c_layout )
-    Stdlib.Bigarray.Array1.t
+      , Stdlib.Bigarray.int8_unsigned_elt
+      , Stdlib.Bigarray.c_layout )
+      Stdlib.Bigarray.Array1.t
 end
 
 module Array1 = struct
@@ -14,15 +14,8 @@ module Array1 = struct
   external get : ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
   external set : ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_set_1"
   external unsafe_get : ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
-
-  external unsafe_set
-    :  (('a, 'b, 'c) t[@local_opt])
-    -> int
-    -> 'a
-    -> unit
-    = "%caml_ba_unsafe_set_1"
-
-  external dim : (('a, 'b, 'c) t[@local_opt]) -> int = "%caml_ba_dim_1"
+  external unsafe_set : ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_unsafe_set_1"
+  external dim : ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
 end
 
 include Bigstring0
@@ -43,9 +36,10 @@ let create size =
   aux_create ~size
 ;;
 
+let empty = create 0
 let length = Array1.dim
 
-external is_mmapped : t -> bool = "bigstring_is_mmapped_stub" [@@noalloc]
+external is_mmapped : (t[@local_opt]) -> bool = "bigstring_is_mmapped_stub" [@@noalloc]
 
 let init n ~f =
   let t = create n in
@@ -72,7 +66,7 @@ let[@inline always] check_args ~loc ~pos ~len (bstr : t) =
 ;;
 
 let get_opt_len bstr ~pos = function
-  | Some len -> len
+  | Some len -> (len : int)
   | None -> length bstr - pos
 ;;
 
@@ -86,13 +80,13 @@ external unsafe_blit
   -> len:int
   -> unit
   = "bigstring_blit_stub"
-  [@@noalloc]
+[@@noalloc]
 
 (* Exposing the external version of get/set supports better inlining. *)
-external get : t -> int -> char = "%caml_ba_ref_1"
-external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
-external set : t -> int -> char -> unit = "%caml_ba_set_1"
-external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
+external get : (t[@local_opt]) -> int -> char = "%caml_ba_ref_1"
+external unsafe_get : (t[@local_opt]) -> int -> char = "%caml_ba_unsafe_ref_1"
+external set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_set_1"
+external unsafe_set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 
 module Bigstring_sequence = struct
   type nonrec t = t
@@ -109,10 +103,10 @@ module Bytes_sequence = struct
 end
 
 include Blit.Make (struct
-  include Bigstring_sequence
+    include Bigstring_sequence
 
-  let unsafe_blit = unsafe_blit
-end)
+    let unsafe_blit = unsafe_blit
+  end)
 
 module From_bytes =
   Blit.Make_distinct
@@ -126,7 +120,7 @@ module From_bytes =
         -> len:int
         -> unit
         = "bigstring_blit_bytes_bigstring_stub"
-        [@@noalloc]
+      [@@noalloc]
 
       include Bigstring_sequence
     end)
@@ -143,7 +137,7 @@ module To_bytes =
         -> len:int
         -> unit
         = "bigstring_blit_bigstring_bytes_stub"
-        [@@noalloc]
+      [@@noalloc]
 
       include Bytes_sequence
     end)
@@ -164,7 +158,7 @@ module From_string =
         -> len:int
         -> unit
         = "bigstring_blit_string_bigstring_stub"
-        [@@noalloc]
+      [@@noalloc]
 
       include Bigstring_sequence
     end)
@@ -184,6 +178,10 @@ let t_of_sexp : Sexp.t -> t = function
   | Atom str -> of_string str
   | List _ as sexp ->
     Sexplib0.Sexp_conv.of_sexp_error "bigstring_of_sexp: atom needed" sexp
+;;
+
+let t_sexp_grammar : t Sexplib.Sexp_grammar.t =
+  Sexplib.Sexp_grammar.coerce [%sexp_grammar: string]
 ;;
 
 let copy t : t = sub t ~pos:0 ~len:(length t)
@@ -220,8 +218,14 @@ let concat =
       dst
 ;;
 
-external unsafe_memset : t -> pos:int -> len:int -> char -> unit = "bigstring_memset_stub"
-  [@@noalloc]
+external unsafe_memset
+  :  (t[@local_opt])
+  -> pos:int
+  -> len:int
+  -> char
+  -> unit
+  = "bigstring_memset_stub"
+[@@noalloc]
 
 let memset t ~pos ~len c =
   Ordered_collection_common.check_pos_len_exn ~pos ~len ~total_length:(length t);
@@ -231,14 +235,14 @@ let memset t ~pos ~len c =
 (* Comparison *)
 
 external unsafe_memcmp
-  :  t
+  :  (t[@local_opt])
   -> pos1:int
-  -> t
+  -> (t[@local_opt])
   -> pos2:int
   -> len:int
   -> int
   = "bigstring_memcmp_stub"
-  [@@noalloc]
+[@@noalloc]
 
 let memcmp t1 ~pos1 t2 ~pos2 ~len =
   Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
@@ -247,14 +251,14 @@ let memcmp t1 ~pos1 t2 ~pos2 ~len =
 ;;
 
 external unsafe_memcmp_bytes
-  :  t
+  :  (t[@local_opt])
   -> pos1:int
-  -> Bytes.t
+  -> (Bytes.t[@local_opt])
   -> pos2:int
   -> len:int
   -> int
   = "bigstring_memcmp_bytes_stub"
-  [@@noalloc]
+[@@noalloc]
 
 let memcmp_bytes t ~pos1 bytes ~pos2 ~len =
   Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t);
@@ -274,7 +278,7 @@ let memcmp_string t ~pos1 str ~pos2 ~len =
     ~len [@nontail]
 ;;
 
-let compare t1 t2 =
+let compare__local t1 t2 =
   if phys_equal t1 t2
   then 0
   else (
@@ -286,20 +290,21 @@ let compare t1 t2 =
     | n -> n)
 ;;
 
+let compare t1 t2 = compare__local t1 t2
+
 external internalhash_fold_bigstring
   :  Hash.state
   -> t
   -> Hash.state
   = "internalhash_fold_bigstring"
-  [@@noalloc]
+[@@noalloc]
 
-let _making_sure_the_C_binding_takes_an_int (x : Hash.state) = (x :> int)
 let hash_fold_t = internalhash_fold_bigstring
 let hash = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t
 
-type t_frozen = t [@@deriving compare, hash, sexp]
+type t_frozen = t [@@deriving compare ~localize, hash, sexp, sexp_grammar]
 
-let equal t1 t2 =
+let equal__local t1 t2 =
   if phys_equal t1 t2
   then true
   else (
@@ -308,26 +313,50 @@ let equal t1 t2 =
     Int.equal len1 len2 && Int.equal (unsafe_memcmp t1 ~pos1:0 t2 ~pos2:0 ~len:len1) 0)
 ;;
 
+let equal t1 t2 = equal__local t1 t2
+
 (* Search *)
 
-external unsafe_find : t -> char -> pos:int -> len:int -> int = "bigstring_find"
-  [@@noalloc]
+external unsafe_find
+  :  (t[@local_opt])
+  -> char
+  -> pos:int
+  -> len:int
+  -> int
+  = "bigstring_find"
+[@@noalloc]
+
+external unsafe_rfind
+  :  (t[@local_opt])
+  -> char
+  -> pos:int
+  -> len:int
+  -> int
+  = "bigstring_rfind"
+[@@noalloc]
 
 external unsafe_memmem
-  :  haystack:t
-  -> needle:t
+  :  haystack:(t[@local_opt])
+  -> needle:(t[@local_opt])
   -> haystack_pos:int
   -> haystack_len:int
   -> needle_pos:int
   -> needle_len:int
   -> int
   = "bigstring_memmem_bytecode" "bigstring_memmem"
-  [@@noalloc]
+[@@noalloc]
 
 let find ?(pos = 0) ?len chr bstr =
   let len = get_opt_len bstr ~pos len in
   check_args ~loc:"find" ~pos ~len bstr;
   let res = unsafe_find bstr chr ~pos ~len in
+  if res < 0 then None else Some res
+;;
+
+let rfind ?(pos = 0) ?len chr bstr =
+  let len = get_opt_len bstr ~pos len in
+  check_args ~loc:"rfind" ~pos ~len bstr;
+  let res = unsafe_rfind bstr chr ~pos ~len in
   if res < 0 then None else Some res
 ;;
 
@@ -362,15 +391,8 @@ external swap64 : int64 -> int64 = "%bswap_int64"
 external unsafe_get_16 : t -> int -> int = "%caml_bigstring_get16u"
 external unsafe_get_32 : t -> int -> int32 = "%caml_bigstring_get32u"
 external unsafe_get_64 : t -> int -> (int64[@local_opt]) = "%caml_bigstring_get64u"
-external unsafe_set_16 : (t[@local_opt]) -> int -> int -> unit = "%caml_bigstring_set16u"
-
-external unsafe_set_32
-  :  (t[@local_opt])
-  -> int
-  -> int32
-  -> unit
-  = "%caml_bigstring_set32u"
-
+external unsafe_set_16 : t -> int -> int -> unit = "%caml_bigstring_set16u"
+external unsafe_set_32 : t -> int -> int32 -> unit = "%caml_bigstring_set32u"
 external unsafe_set_64 : t -> int -> int64 -> unit = "%caml_bigstring_set64u"
 
 let[@inline always] get_16 (t : t) (pos : int) : int =

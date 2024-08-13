@@ -221,6 +221,17 @@ CAMLprim value bigstring_find(value v_str, value v_needle,
   return ptr_to_offset(start, v_pos, r);
 }
 
+CAMLprim value bigstring_rfind(value v_str, value v_needle,
+                               value v_pos, value v_len)
+{
+  char *start, *r;
+
+  start = get_bstr(v_str, v_pos);
+  r = (char*) memrchr(start, Int_val(v_needle), Long_val(v_len));
+
+  return ptr_to_offset(start, v_pos, r);
+}
+
 CAMLprim value bigstring_memmem(value v_haystack, value v_needle,
                                 value v_haystack_pos, value v_haystack_len,
                                 value v_needle_pos, value v_needle_len)

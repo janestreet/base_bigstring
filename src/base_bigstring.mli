@@ -6,13 +6,12 @@ open Stdlib.Bigarray
 (** {2 Types and exceptions} *)
 
 (** Type of bigstrings *)
-type t = (char, int8_unsigned_elt, c_layout) Array1.t [@@deriving compare, sexp]
+type t = (char, int8_unsigned_elt, c_layout) Array1.t
+[@@deriving compare ~localize, equal ~localize, sexp, sexp_grammar]
 
 (** Type of bigstrings which support hashing. Note that mutation invalidates previous
     hashes. *)
-type t_frozen = t [@@deriving compare, hash, sexp]
-
-include Equal.S with type t := t
+type t_frozen = t [@@deriving compare ~localize, hash, sexp, sexp_grammar]
 
 (** {2 Creation and string conversion} *)
 
@@ -20,6 +19,9 @@ include Equal.S with type t := t
     @return a new bigstring having [length].
     Content is undefined. *)
 val create : int -> t
+
+(** [empty] is a bigstring of length 0 *)
+val empty : t
 
 (** [init n ~f] creates a bigstring [t] of length [n], with [t.{i} = f i]. *)
 val init : int -> f:(int -> char) -> t
@@ -79,21 +81,21 @@ val get_opt_len : t -> pos:int -> int option -> int
 val length : t -> int
 
 (** [get t pos] returns the character at [pos] *)
-external get : t -> int -> char = "%caml_ba_ref_1"
+external get : (t[@local_opt]) -> int -> char = "%caml_ba_ref_1"
 
 (** [unsafe_get t pos] returns the character at [pos], without bounds checks. *)
-external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
+external unsafe_get : (t[@local_opt]) -> int -> char = "%caml_ba_unsafe_ref_1"
 
 (** [set t pos] sets the character at [pos] *)
-external set : t -> int -> char -> unit = "%caml_ba_set_1"
+external set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_set_1"
 
 (** [unsafe_set t pos] sets the character at [pos], without bounds checks. *)
-external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
+external unsafe_set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 
 (** [is_mmapped bstr] @return whether the bigstring [bstr] is
     memory-mapped. *)
-external is_mmapped : t -> bool = "bigstring_is_mmapped_stub"
-  [@@noalloc]
+external is_mmapped : (t[@local_opt]) -> bool = "bigstring_is_mmapped_stub"
+[@@noalloc]
 
 (** {2 Blitting} *)
 
@@ -108,13 +110,13 @@ val copy : t -> t
 
 module To_string : sig
   val blit : (t, bytes) Blit.blit
-    [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blit] instead"]
+  [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blit] instead"]
 
   val blito : (t, bytes) Blit.blito
-    [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blito] instead"]
+  [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.blito] instead"]
 
   val unsafe_blit : (t, bytes) Blit.blit
-    [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.unsafe_blit] instead"]
+  [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.unsafe_blit] instead"]
 
   include Blit.S_to_string with type t := t
 end
@@ -151,10 +153,34 @@ val memcmp_string : t -> pos1:int -> string -> pos2:int -> len:int -> int
     @param len default = [length bstr - pos] *)
 val find : ?pos:int -> ?len:int -> char -> t -> int option
 
+(** [rfind ?pos ?len char t] returns [Some i] for the largest [i >= pos] such that
+    [t.{i} = char], or [None] if there is no such [i].
+
+    @param pos default = 0
+    @param len default = [length bstr - pos] *)
+val rfind : ?pos:int -> ?len:int -> char -> t -> int option
+
 (** Same as [find], but does no bounds checking, and returns a negative value instead of
     [None] if [char] is not found. *)
-external unsafe_find : t -> char -> pos:int -> len:int -> int = "bigstring_find"
-  [@@noalloc]
+external unsafe_find
+  :  (t[@local_opt])
+  -> char
+  -> pos:int
+  -> len:int
+  -> int
+  = "bigstring_find"
+[@@noalloc]
+
+(** Same as [rfind], but does no bounds checking, and returns a negative value instead of
+    [None] if [char] is not found. *)
+external unsafe_rfind
+  :  (t[@local_opt])
+  -> char
+  -> pos:int
+  -> len:int
+  -> int
+  = "bigstring_rfind"
+[@@noalloc]
 
 (** Search for the position of (a substring of) [needle] in (a substring of) [haystack]. *)
 val memmem
@@ -169,15 +195,15 @@ val memmem
 
 (** As [unsafe_find] for [memmem]. *)
 external unsafe_memmem
-  :  haystack:t
-  -> needle:t
+  :  haystack:(t[@local_opt])
+  -> needle:(t[@local_opt])
   -> haystack_pos:int
   -> haystack_len:int
   -> needle_pos:int
   -> needle_len:int
   -> int
   = "bigstring_memmem_bytecode" "bigstring_memmem"
-  [@@noalloc]
+[@@noalloc]
 
 (** {2 Accessors for parsing binary values, analogous to [Binary_packing]}
 
