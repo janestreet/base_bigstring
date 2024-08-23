@@ -93,7 +93,7 @@ let%test_unit "roundtrip" =
     [%test_eq: t] bstr (t_of_sexp (sexp_of_t bstr)))
 ;;
 
-external is_mmapped : t_frozen -> bool = "bigstring_is_mmapped_stub" [@@noalloc]
+external is_mmapped : local_ t_frozen -> bool = "bigstring_is_mmapped_stub" [@@noalloc]
 
 let%test "bigstring created with create are not mmapped" = not (is_mmapped (create 2))
 let init = init
@@ -537,7 +537,13 @@ let%expect_test "basic string getters" =
     |}]
 ;;
 
-external unsafe_find : t_frozen -> char -> pos:int -> len:int -> int = "bigstring_find"
+external unsafe_find
+  :  local_ t_frozen
+  -> char
+  -> pos:int
+  -> len:int
+  -> int
+  = "bigstring_find"
 [@@noalloc]
 
 let%expect_test "basic unsafe_find" =
@@ -622,8 +628,8 @@ let%expect_test "basic rfind" =
 ;;
 
 external unsafe_memmem
-  :  haystack:t
-  -> needle:t
+  :  haystack:local_ t
+  -> needle:local_ t
   -> haystack_pos:int
   -> haystack_len:int
   -> needle_pos:int
@@ -732,7 +738,7 @@ let%test_module "basic memcmp" =
 
 let memset = memset
 
-external set : t_frozen -> int -> char -> unit = "%caml_ba_set_1"
+external set : local_ t_frozen -> int -> char -> unit = "%caml_ba_set_1"
 
 let%expect_test "basic char setters" =
   try_setters
@@ -748,7 +754,7 @@ let%expect_test "basic char setters" =
 
 let unsafe_memset = unsafe_memset
 
-external unsafe_set : t_frozen -> int -> char -> unit = "%caml_ba_unsafe_set_1"
+external unsafe_set : local_ t_frozen -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 
 let%expect_test "basic char unsafe setters" =
   try_setters
@@ -766,7 +772,7 @@ let%expect_test "basic char unsafe setters" =
     |}]
 ;;
 
-external get : t_frozen -> int -> char = "%caml_ba_ref_1"
+external get : local_ t_frozen -> int -> char = "%caml_ba_ref_1"
 
 let%expect_test "basic char getters" =
   try_getters ~first_bigstring_byte:1 [ (fun t ~pos -> get t pos) ]
@@ -774,7 +780,7 @@ let%expect_test "basic char getters" =
   [%expect {| ((Ok "\001")) |}]
 ;;
 
-external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
+external unsafe_get : local_ t -> int -> char = "%caml_ba_unsafe_ref_1"
 
 let%expect_test "basic unsafe char getters" =
   try_getters ~first_bigstring_byte:1 [ (fun t ~pos -> unsafe_get t pos) ]
@@ -905,7 +911,7 @@ let%bench_module "" =
     *)
     let arch_sixtyfour = Stdlib.Sys.word_size = 64
 
-    external int64_to_int : int64 -> int = "%int64_to_int"
+    external int64_to_int : local_ int64 -> int = "%int64_to_int"
 
     let int64_conv_error () =
       failwith "unsafe_read_int64: value cannot be represented unboxed!"
@@ -914,7 +920,7 @@ let%bench_module "" =
     let some_int = 42L
 
     (* [Poly] is required so that we can compare unboxed [int64]. *)
-    let[@inline always] old_int64_to_int_exn n =
+    let[@inline always] old_int64_to_int_exn (local_ n) =
       if arch_sixtyfour
       then
         if Poly.(n >= -0x4000_0000_0000_0000L && n < 0x4000_0000_0000_0000L)
@@ -925,7 +931,7 @@ let%bench_module "" =
       else int64_conv_error ()
     ;;
 
-    let[@inline always] bit_manipulation_int64_to_int_exn n =
+    let[@inline always] bit_manipulation_int64_to_int_exn (local_ n) =
       if arch_sixtyfour
       then
         (*
@@ -947,7 +953,7 @@ let%bench_module "" =
       else int64_conv_error ()
     ;;
 
-    let[@inline always] with_poly_eq_int64_to_int_exn n =
+    let[@inline always] with_poly_eq_int64_to_int_exn (local_ n) =
       let n' = int64_to_int n in
       if Poly.( = ) (Int64.of_int n') n then n' else int64_conv_error ()
     ;;

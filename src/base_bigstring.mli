@@ -31,14 +31,14 @@ val init : int -> f:(int -> char) -> t
 
     @param pos default = 0
     @param len default = [String.length str - pos] *)
-val of_string : ?pos:int -> ?len:int -> string -> t
+val of_string : ?pos:int -> ?len:int -> local_ string -> t
 
 (** [of_bytes ?pos ?len str] @return a new bigstring that is equivalent
     to the subbytes of length [len] in [str] starting at position [pos].
 
     @param pos default = 0
     @param len default = [Bytes.length str - pos] *)
-val of_bytes : ?pos:int -> ?len:int -> bytes -> t
+val of_bytes : ?pos:int -> ?len:int -> local_ bytes -> t
 
 (** [to_string ?pos ?len bstr] @return a new string that is equivalent
     to the substring of length [len] in [bstr] starting at position [pos].
@@ -47,7 +47,7 @@ val of_bytes : ?pos:int -> ?len:int -> bytes -> t
     @param len default = [length bstr - pos]
 
     @raise Invalid_argument if the string would exceed runtime limits. *)
-val to_string : ?pos:int -> ?len:int -> t -> string
+val to_string : ?pos:int -> ?len:int -> local_ t -> string
 
 (** [to_bytes ?pos ?len bstr] @return a new byte sequence that is equivalent
     to the substring of length [len] in [bstr] starting at position [pos].
@@ -56,7 +56,7 @@ val to_string : ?pos:int -> ?len:int -> t -> string
     @param len default = [length bstr - pos]
 
     @raise Invalid_argument if the bytes would exceed runtime limits. *)
-val to_bytes : ?pos:int -> ?len:int -> t -> bytes
+val to_bytes : ?pos:int -> ?len:int -> local_ t -> bytes
 
 (** [concat ?sep list] returns the concatenation of [list] with [sep] in between each. *)
 val concat : ?sep:t -> t list -> t
@@ -67,18 +67,18 @@ val concat : ?sep:t -> t list -> t
     arguments [pos] and [len] for bigstrings [bstr].  @raise
     Invalid_argument if these arguments are illegal for the given
     bigstring using [loc] to indicate the calling context. *)
-val check_args : loc:string -> pos:int -> len:int -> t -> unit
+val check_args : loc:string -> pos:int -> len:int -> local_ t -> unit
 
 (** [get_opt_len bstr ~pos opt_len] @return the length of a subbigstring
     in [bstr] starting at position [pos] and given optional length
     [opt_len].  This function does not check the validity of its
     arguments.  Use {!check_args} for that purpose. *)
-val get_opt_len : t -> pos:int -> int option -> int
+val get_opt_len : local_ t -> pos:int -> local_ int option -> int
 
 (** {2 Accessors} *)
 
 (** [length bstr] @return the length of bigstring [bstr]. *)
-val length : t -> int
+val length : local_ t -> int
 
 (** [get t pos] returns the character at [pos] *)
 external get : (t[@local_opt]) -> int -> char = "%caml_ba_ref_1"
@@ -106,7 +106,7 @@ external is_mmapped : (t[@local_opt]) -> bool = "bigstring_is_mmapped_stub"
 
 include Blit.S with type t := t
 
-val copy : t -> t
+val copy : local_ t -> t
 
 module To_string : sig
   val blit : (t, bytes) Blit.blit
@@ -126,23 +126,23 @@ module To_bytes : Blit.S_distinct with type src := t with type dst := bytes
 module From_bytes : Blit.S_distinct with type src := bytes with type dst := t
 
 (** [memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)]. *)
-val memset : t -> pos:int -> len:int -> char -> unit
+val memset : local_ t -> pos:int -> len:int -> char -> unit
 
 (** [unsafe_memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)],
     without bounds checks. *)
-val unsafe_memset : t -> pos:int -> len:int -> char -> unit
+val unsafe_memset : local_ t -> pos:int -> len:int -> char -> unit
 
 (** Memcmp *)
 
 (** [memcmp t1 ~pos1 t2 ~pos2 ~len] is like [compare t1 t2] except performs the comparison
     on the subregions of [t1] and [t2] defined by [pos1], [pos2], and [len]. *)
-val memcmp : t -> pos1:int -> t -> pos2:int -> len:int -> int
+val memcmp : local_ t -> pos1:int -> local_ t -> pos2:int -> len:int -> int
 
 (** [memcmp_bytes], for efficient [memcmp] between [Bigstring] and [Bytes] data. *)
-val memcmp_bytes : t -> pos1:int -> Bytes.t -> pos2:int -> len:int -> int
+val memcmp_bytes : local_ t -> pos1:int -> local_ Bytes.t -> pos2:int -> len:int -> int
 
 (** [memcmp_string], for efficient [memcmp] between [Bigstring] and [string] data. *)
-val memcmp_string : t -> pos1:int -> string -> pos2:int -> len:int -> int
+val memcmp_string : local_ t -> pos1:int -> local_ string -> pos2:int -> len:int -> int
 
 (** {2 Search} *)
 
@@ -151,14 +151,14 @@ val memcmp_string : t -> pos1:int -> string -> pos2:int -> len:int -> int
 
     @param pos default = 0
     @param len default = [length bstr - pos] *)
-val find : ?pos:int -> ?len:int -> char -> t -> int option
+val find : ?pos:int -> ?len:int -> char -> local_ t -> int option
 
 (** [rfind ?pos ?len char t] returns [Some i] for the largest [i >= pos] such that
     [t.{i} = char], or [None] if there is no such [i].
 
     @param pos default = 0
     @param len default = [length bstr - pos] *)
-val rfind : ?pos:int -> ?len:int -> char -> t -> int option
+val rfind : ?pos:int -> ?len:int -> char -> local_ t -> int option
 
 (** Same as [find], but does no bounds checking, and returns a negative value instead of
     [None] if [char] is not found. *)
@@ -184,8 +184,8 @@ external unsafe_rfind
 
 (** Search for the position of (a substring of) [needle] in (a substring of) [haystack]. *)
 val memmem
-  :  haystack:t
-  -> needle:t
+  :  haystack:local_ t
+  -> needle:local_ t
   -> ?haystack_pos:int
   -> ?haystack_len:int
   -> ?needle_pos:int
@@ -229,52 +229,52 @@ external unsafe_memmem
     The [unsafe_] prefix indicates that these functions do no bounds checking and silently
     truncate out-of-range numeric arguments. *)
 
-val get_int8 : t -> pos:int -> int
-val set_int8_exn : t -> pos:int -> int -> unit
-val get_uint8 : t -> pos:int -> int
-val set_uint8_exn : t -> pos:int -> int -> unit
-val unsafe_get_int8 : t -> pos:int -> int
-val unsafe_set_int8 : t -> pos:int -> int -> unit
-val unsafe_get_uint8 : t -> pos:int -> int
-val unsafe_set_uint8 : t -> pos:int -> int -> unit
+val get_int8 : local_ t -> pos:int -> int
+val set_int8_exn : local_ t -> pos:int -> int -> unit
+val get_uint8 : local_ t -> pos:int -> int
+val set_uint8_exn : local_ t -> pos:int -> int -> unit
+val unsafe_get_int8 : local_ t -> pos:int -> int
+val unsafe_set_int8 : local_ t -> pos:int -> int -> unit
+val unsafe_get_uint8 : local_ t -> pos:int -> int
+val unsafe_set_uint8 : local_ t -> pos:int -> int -> unit
 
 (** {2 16-bit methods} *)
 
-val get_int16_le : t -> pos:int -> int
-val get_int16_be : t -> pos:int -> int
-val set_int16_le_exn : t -> pos:int -> int -> unit
-val set_int16_be_exn : t -> pos:int -> int -> unit
-val unsafe_get_int16_le : t -> pos:int -> int
-val unsafe_get_int16_be : t -> pos:int -> int
-val unsafe_set_int16_le : t -> pos:int -> int -> unit
-val unsafe_set_int16_be : t -> pos:int -> int -> unit
-val get_uint16_le : t -> pos:int -> int
-val get_uint16_be : t -> pos:int -> int
-val set_uint16_le_exn : t -> pos:int -> int -> unit
-val set_uint16_be_exn : t -> pos:int -> int -> unit
-val unsafe_get_uint16_le : t -> pos:int -> int
-val unsafe_get_uint16_be : t -> pos:int -> int
-val unsafe_set_uint16_le : t -> pos:int -> int -> unit
-val unsafe_set_uint16_be : t -> pos:int -> int -> unit
+val get_int16_le : local_ t -> pos:int -> int
+val get_int16_be : local_ t -> pos:int -> int
+val set_int16_le_exn : local_ t -> pos:int -> int -> unit
+val set_int16_be_exn : local_ t -> pos:int -> int -> unit
+val unsafe_get_int16_le : local_ t -> pos:int -> int
+val unsafe_get_int16_be : local_ t -> pos:int -> int
+val unsafe_set_int16_le : local_ t -> pos:int -> int -> unit
+val unsafe_set_int16_be : local_ t -> pos:int -> int -> unit
+val get_uint16_le : local_ t -> pos:int -> int
+val get_uint16_be : local_ t -> pos:int -> int
+val set_uint16_le_exn : local_ t -> pos:int -> int -> unit
+val set_uint16_be_exn : local_ t -> pos:int -> int -> unit
+val unsafe_get_uint16_le : local_ t -> pos:int -> int
+val unsafe_get_uint16_be : local_ t -> pos:int -> int
+val unsafe_set_uint16_le : local_ t -> pos:int -> int -> unit
+val unsafe_set_uint16_be : local_ t -> pos:int -> int -> unit
 
 (** {2 32-bit methods} *)
 
-val get_int32_le : t -> pos:int -> int
-val get_int32_be : t -> pos:int -> int
-val set_int32_le_exn : t -> pos:int -> int -> unit
-val set_int32_be_exn : t -> pos:int -> int -> unit
-val unsafe_get_int32_le : t -> pos:int -> int
-val unsafe_get_int32_be : t -> pos:int -> int
-val unsafe_set_int32_le : t -> pos:int -> int -> unit
-val unsafe_set_int32_be : t -> pos:int -> int -> unit
-val get_uint32_le : t -> pos:int -> int
-val get_uint32_be : t -> pos:int -> int
-val set_uint32_le_exn : t -> pos:int -> int -> unit
-val set_uint32_be_exn : t -> pos:int -> int -> unit
-val unsafe_get_uint32_le : t -> pos:int -> int
-val unsafe_get_uint32_be : t -> pos:int -> int
-val unsafe_set_uint32_le : t -> pos:int -> int -> unit
-val unsafe_set_uint32_be : t -> pos:int -> int -> unit
+val get_int32_le : local_ t -> pos:int -> int
+val get_int32_be : local_ t -> pos:int -> int
+val set_int32_le_exn : local_ t -> pos:int -> int -> unit
+val set_int32_be_exn : local_ t -> pos:int -> int -> unit
+val unsafe_get_int32_le : local_ t -> pos:int -> int
+val unsafe_get_int32_be : local_ t -> pos:int -> int
+val unsafe_set_int32_le : local_ t -> pos:int -> int -> unit
+val unsafe_set_int32_be : local_ t -> pos:int -> int -> unit
+val get_uint32_le : local_ t -> pos:int -> int
+val get_uint32_be : local_ t -> pos:int -> int
+val set_uint32_le_exn : local_ t -> pos:int -> int -> unit
+val set_uint32_be_exn : local_ t -> pos:int -> int -> unit
+val unsafe_get_uint32_le : local_ t -> pos:int -> int
+val unsafe_get_uint32_be : local_ t -> pos:int -> int
+val unsafe_set_uint32_le : local_ t -> pos:int -> int -> unit
+val unsafe_set_uint32_be : local_ t -> pos:int -> int -> unit
 
 (** Similar to the usage in binary_packing, the below methods are treating the value being
     read (or written), as an ocaml immediate integer, as such it is actually 63 bits. If
@@ -284,67 +284,67 @@ val unsafe_set_uint32_be : t -> pos:int -> int -> unit
 
 (** {2 64-bit signed values} *)
 
-val get_int64_le_exn : t -> pos:int -> int
-val get_int64_be_exn : t -> pos:int -> int
-val get_int64_le_trunc : t -> pos:int -> int
-val get_int64_be_trunc : t -> pos:int -> int
-val set_int64_le : t -> pos:int -> int -> unit
-val set_int64_be : t -> pos:int -> int -> unit
-val unsafe_get_int64_le_exn : t -> pos:int -> int
-val unsafe_get_int64_be_exn : t -> pos:int -> int
-val unsafe_get_int64_le_trunc : t -> pos:int -> int
-val unsafe_get_int64_be_trunc : t -> pos:int -> int
-val unsafe_set_int64_le : t -> pos:int -> int -> unit
-val unsafe_set_int64_be : t -> pos:int -> int -> unit
+val get_int64_le_exn : local_ t -> pos:int -> int
+val get_int64_be_exn : local_ t -> pos:int -> int
+val get_int64_le_trunc : local_ t -> pos:int -> int
+val get_int64_be_trunc : local_ t -> pos:int -> int
+val set_int64_le : local_ t -> pos:int -> int -> unit
+val set_int64_be : local_ t -> pos:int -> int -> unit
+val unsafe_get_int64_le_exn : local_ t -> pos:int -> int
+val unsafe_get_int64_be_exn : local_ t -> pos:int -> int
+val unsafe_get_int64_le_trunc : local_ t -> pos:int -> int
+val unsafe_get_int64_be_trunc : local_ t -> pos:int -> int
+val unsafe_set_int64_le : local_ t -> pos:int -> int -> unit
+val unsafe_set_int64_be : local_ t -> pos:int -> int -> unit
 
 (** {2 64-bit unsigned values} *)
 
-val get_uint64_be_exn : t -> pos:int -> int
-val get_uint64_le_exn : t -> pos:int -> int
-val set_uint64_le_exn : t -> pos:int -> int -> unit
-val set_uint64_be_exn : t -> pos:int -> int -> unit
-val unsafe_get_uint64_be_exn : t -> pos:int -> int
-val unsafe_get_uint64_le_exn : t -> pos:int -> int
-val unsafe_set_uint64_le : t -> pos:int -> int -> unit
-val unsafe_set_uint64_be : t -> pos:int -> int -> unit
+val get_uint64_be_exn : local_ t -> pos:int -> int
+val get_uint64_le_exn : local_ t -> pos:int -> int
+val set_uint64_le_exn : local_ t -> pos:int -> int -> unit
+val set_uint64_be_exn : local_ t -> pos:int -> int -> unit
+val unsafe_get_uint64_be_exn : local_ t -> pos:int -> int
+val unsafe_get_uint64_le_exn : local_ t -> pos:int -> int
+val unsafe_set_uint64_le : local_ t -> pos:int -> int -> unit
+val unsafe_set_uint64_be : local_ t -> pos:int -> int -> unit
 
 (** {2 32-bit methods with full precision} *)
 
-val get_int32_t_le : t -> pos:int -> Int32.t
-val get_int32_t_be : t -> pos:int -> Int32.t
-val set_int32_t_le : t -> pos:int -> Int32.t -> unit
-val set_int32_t_be : t -> pos:int -> Int32.t -> unit
-val unsafe_get_int32_t_le : t -> pos:int -> Int32.t
-val unsafe_get_int32_t_be : t -> pos:int -> Int32.t
-val unsafe_set_int32_t_le : t -> pos:int -> Int32.t -> unit
-val unsafe_set_int32_t_be : t -> pos:int -> Int32.t -> unit
+val get_int32_t_le : local_ t -> pos:int -> Int32.t
+val get_int32_t_be : local_ t -> pos:int -> Int32.t
+val set_int32_t_le : local_ t -> pos:int -> local_ Int32.t -> unit
+val set_int32_t_be : local_ t -> pos:int -> local_ Int32.t -> unit
+val unsafe_get_int32_t_le : local_ t -> pos:int -> Int32.t
+val unsafe_get_int32_t_be : local_ t -> pos:int -> Int32.t
+val unsafe_set_int32_t_le : local_ t -> pos:int -> local_ Int32.t -> unit
+val unsafe_set_int32_t_be : local_ t -> pos:int -> local_ Int32.t -> unit
 
 (** {2 64-bit methods with full precision} *)
 
-val get_int64_t_le : t -> pos:int -> Int64.t
-val get_int64_t_be : t -> pos:int -> Int64.t
-val set_int64_t_le : t -> pos:int -> Int64.t -> unit
-val set_int64_t_be : t -> pos:int -> Int64.t -> unit
-val unsafe_get_int64_t_le : t -> pos:int -> Int64.t
-val unsafe_get_int64_t_be : t -> pos:int -> Int64.t
-val unsafe_set_int64_t_le : t -> pos:int -> Int64.t -> unit
-val unsafe_set_int64_t_be : t -> pos:int -> Int64.t -> unit
+val get_int64_t_le : local_ t -> pos:int -> Int64.t
+val get_int64_t_be : local_ t -> pos:int -> Int64.t
+val set_int64_t_le : local_ t -> pos:int -> local_ Int64.t -> unit
+val set_int64_t_be : local_ t -> pos:int -> local_ Int64.t -> unit
+val unsafe_get_int64_t_le : local_ t -> pos:int -> Int64.t
+val unsafe_get_int64_t_be : local_ t -> pos:int -> Int64.t
+val unsafe_set_int64_t_le : local_ t -> pos:int -> local_ Int64.t -> unit
+val unsafe_set_int64_t_be : local_ t -> pos:int -> local_ Int64.t -> unit
 
 (** {2 String methods}
 
     These are alternatives to [to_string] that follow the conventions of the int
     accessors, and in particular avoid optional arguments. *)
 
-val get_string : t -> pos:int -> len:int -> string
-val unsafe_get_string : t -> pos:int -> len:int -> string
+val get_string : local_ t -> pos:int -> len:int -> string
+val unsafe_get_string : local_ t -> pos:int -> len:int -> string
 
 module Local : sig
-  val get_int64_t_le : t -> pos:int -> Int64.t
-  val get_int64_t_be : t -> pos:int -> Int64.t
-  val unsafe_get_int64_t_le : t -> pos:int -> Int64.t
-  val unsafe_get_int64_t_be : t -> pos:int -> Int64.t
-  val get_string : t -> pos:int -> len:int -> string
-  val unsafe_get_string : t -> pos:int -> len:int -> string
+  val get_int64_t_le : local_ t -> pos:int -> local_ Int64.t
+  val get_int64_t_be : local_ t -> pos:int -> local_ Int64.t
+  val unsafe_get_int64_t_le : local_ t -> pos:int -> local_ Int64.t
+  val unsafe_get_int64_t_be : local_ t -> pos:int -> local_ Int64.t
+  val get_string : local_ t -> pos:int -> len:int -> local_ string
+  val unsafe_get_string : local_ t -> pos:int -> len:int -> local_ string
 end
 
 module Int_repr : sig
