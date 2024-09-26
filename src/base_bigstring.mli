@@ -7,11 +7,11 @@ open Stdlib.Bigarray
 
 (** Type of bigstrings *)
 type t = (char, int8_unsigned_elt, c_layout) Array1.t
-[@@deriving compare ~localize, equal ~localize, sexp, sexp_grammar]
+[@@deriving compare ~localize, equal ~localize, globalize, sexp, sexp_grammar]
 
 (** Type of bigstrings which support hashing. Note that mutation invalidates previous
     hashes. *)
-type t_frozen = t [@@deriving compare ~localize, hash, sexp, sexp_grammar]
+type t_frozen = t [@@deriving compare ~localize, globalize, hash, sexp, sexp_grammar]
 
 (** {2 Creation and string conversion} *)
 

@@ -48,8 +48,10 @@ module From_string = From_string
 module To_string = To_string
 
 let copy = copy
+let globalize = globalize
 
 let%test_unit "copy" =
+  assert (phys_equal copy globalize);
   let equal a b = String.equal (to_string a) (to_string b) in
   let a = create 1 in
   set a 0 'a';
@@ -995,7 +997,9 @@ let%bench_module "" =
 ;;
 
 type nonrec t = t
-type nonrec t_frozen = t_frozen [@@deriving compare ~localize, hash, sexp, sexp_grammar]
+
+type nonrec t_frozen = t_frozen
+[@@deriving compare ~localize, globalize, hash, sexp, sexp_grammar]
 
 (* Effectively tested in lib/int_repr *)
 module Int_repr = Base_bigstring.Int_repr

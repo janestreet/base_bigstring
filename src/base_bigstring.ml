@@ -185,6 +185,7 @@ let t_sexp_grammar : t Sexplib.Sexp_grammar.t =
 ;;
 
 let copy t : t = sub t ~pos:0 ~len:(length t)
+let globalize = copy
 
 let concat =
   let append ~src ~dst ~dst_pos_ref =
@@ -302,7 +303,7 @@ external internalhash_fold_bigstring
 let hash_fold_t = internalhash_fold_bigstring
 let hash = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t
 
-type t_frozen = t [@@deriving compare ~localize, hash, sexp, sexp_grammar]
+type t_frozen = t [@@deriving compare ~localize, globalize, hash, sexp, sexp_grammar]
 
 let equal__local t1 t2 =
   if phys_equal t1 t2
