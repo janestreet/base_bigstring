@@ -1,8 +1,7 @@
 (library
  (foreign_stubs
   (language c)
-  (names base_bigstring_stubs)
-   )
+  (names base_bigstring_stubs))
  (c_library_flags (:include flags.sexp))
  (name base_bigstring)
  (public_name base_bigstring)
@@ -11,8 +10,7 @@
  (libraries base int_repr sexplib)
  (ocamlopt_flags :standard -O3)
  (preprocess
-  (pps ppx_jane))
- )
+  (pps ppx_jane)))
 
 (rule
   (targets flags.sexp)
