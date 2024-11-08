@@ -22,13 +22,16 @@
 #define bswap_16 OSSwapInt16
 #define bswap_32 OSSwapInt32
 #define bswap_64 OSSwapInt64
-static inline void *memrchr(const void *s, int c, size_t n){
-  const unsigned char *p = (const unsigned char *)s + n;
+static inline void * memrchr(const void * s, int c, size_t n)
+{
+  const unsigned char * p = (const unsigned char *)s + n;
+
   while (n--) {
     if (*(--p) == (unsigned char) c) {
       return (void *)p;
     }
   }
+
   return NULL;
 }
 #elif __GLIBC__
