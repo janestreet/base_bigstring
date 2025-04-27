@@ -29,7 +29,12 @@ module Blit_elt = struct
   let of_bool b = if b then 'a' else 'b'
 end
 
-module Blit_s : Blit.S with type t := t = Base_bigstring
+module Blit_s : sig @@ portable
+    include Blit.S
+  end
+  with type t := t =
+  Base_bigstring
+
 include Blit_s
 include Base_for_tests.Test_blit.Test (Blit_elt) (Bigstring_sequence) (Blit_s)
 module From_bytes = From_bytes
@@ -95,7 +100,8 @@ let%test_unit "roundtrip" =
     [%test_eq: t] bstr (t_of_sexp (sexp_of_t bstr)))
 ;;
 
-external is_mmapped : local_ t_frozen -> bool = "bigstring_is_mmapped_stub" [@@noalloc]
+external is_mmapped : local_ t_frozen -> bool @@ portable = "bigstring_is_mmapped_stub"
+[@@noalloc]
 
 let%test "bigstring created with create are not mmapped" = not (is_mmapped (create 2))
 let init = init
@@ -545,6 +551,7 @@ external unsafe_find
   -> pos:int
   -> len:int
   -> int
+  @@ portable
   = "bigstring_find"
 [@@noalloc]
 
@@ -589,6 +596,7 @@ external unsafe_rfind
   -> pos:int
   -> len:int
   -> int
+  @@ portable
   = "bigstring_rfind"
 [@@noalloc]
 
@@ -637,12 +645,16 @@ external unsafe_memmem
   -> needle_pos:int
   -> needle_len:int
   -> int
+  @@ portable
   = "bigstring_memmem_bytecode" "bigstring_memmem"
 [@@noalloc]
 
 let%expect_test "basic unsafe_memmem" =
-  let haystack = "foo bar baz qwux" |> of_string in
+  let haystack = "foo bar baz qwux" in
+  let actual_haystack_len = String.length haystack in
+  let haystack = of_string haystack in
   let t ~haystack_pos ~haystack_len ~needle_pos ~needle_len needle =
+    assert (haystack_pos + haystack_len <= actual_haystack_len);
     let result =
       unsafe_memmem
         ~haystack
@@ -662,9 +674,9 @@ let%expect_test "basic unsafe_memmem" =
   [%expect {| -1 |}];
   t ~haystack_pos:0 ~haystack_len:16 ~needle_pos:1 ~needle_len:3 "ZfooZ";
   [%expect {| 0 |}];
-  t ~haystack_pos:1 ~haystack_len:16 ~needle_pos:1 ~needle_len:3 "ZfooZ";
+  t ~haystack_pos:1 ~haystack_len:15 ~needle_pos:1 ~needle_len:3 "ZfooZ";
   [%expect {| -1 |}];
-  t ~haystack_pos:1 ~haystack_len:16 ~needle_pos:1 ~needle_len:3 "Zoo Z";
+  t ~haystack_pos:1 ~haystack_len:15 ~needle_pos:1 ~needle_len:3 "Zoo Z";
   [%expect {| 1 |}]
 ;;
 
@@ -736,9 +748,46 @@ module%test [@name "basic memcmp"] _ = struct
   ;;
 end
 
+external unsafe_strncmp
+  :  (t_frozen[@local_opt])
+  -> pos1:int
+  -> (t_frozen[@local_opt])
+  -> pos2:int
+  -> len:int
+  -> int
+  @@ portable
+  = "bigstring_strncmp"
+[@@noalloc]
+
+module%test [@name "unsafe_strncmp"] _ = struct
+  let test ?(pos1 = 0) ?(pos2 = 0) a b ~len =
+    let result = unsafe_strncmp (of_string a) ~pos1 (of_string b) ~pos2 ~len in
+    print_s [%sexp (result : int)]
+  ;;
+
+  let%expect_test "" =
+    test "ABC" "ABC" ~len:3;
+    [%expect {| 0 |}];
+    test "ABC" "ABD" ~len:3;
+    [%expect {| -1 |}];
+    test "ABC" "ABD" ~len:2;
+    [%expect {| 0 |}];
+    test "AB\000" "ABC" ~len:3;
+    [%expect {| -1 |}];
+    test "AB\000CD" "AB\000EF" ~len:3;
+    [%expect {| 0 |}];
+    test "AB\000CD" "AB\000EF" ~len:5;
+    [%expect {| 0 |}];
+    test "ABC" "DAB" ~len:2 ~pos1:1 ~pos2:1;
+    [%expect {| 1 |}];
+    test "CAB" "DAB" ~len:2 ~pos1:1 ~pos2:1;
+    [%expect {| 0 |}]
+  ;;
+end
+
 let memset = memset
 
-external set : local_ t_frozen -> int -> char -> unit = "%caml_ba_set_1"
+external set : local_ t_frozen -> int -> char -> unit @@ portable = "%caml_ba_set_1"
 
 let%expect_test "basic char setters" =
   try_setters
@@ -754,7 +803,13 @@ let%expect_test "basic char setters" =
 
 let unsafe_memset = unsafe_memset
 
-external unsafe_set : local_ t_frozen -> int -> char -> unit = "%caml_ba_unsafe_set_1"
+external unsafe_set
+  :  local_ t_frozen
+  -> int
+  -> char
+  -> unit
+  @@ portable
+  = "%caml_ba_unsafe_set_1"
 
 let%expect_test "basic char unsafe setters" =
   try_setters
@@ -772,7 +827,7 @@ let%expect_test "basic char unsafe setters" =
     |}]
 ;;
 
-external get : local_ t_frozen -> int -> char = "%caml_ba_ref_1"
+external get : local_ t_frozen -> int -> char @@ portable = "%caml_ba_ref_1"
 
 let%expect_test "basic char getters" =
   try_getters ~first_bigstring_byte:1 [ (fun t ~pos -> get t pos) ]
@@ -780,7 +835,7 @@ let%expect_test "basic char getters" =
   [%expect {| ((Ok "\001")) |}]
 ;;
 
-external unsafe_get : local_ t -> int -> char = "%caml_ba_unsafe_ref_1"
+external unsafe_get : local_ t -> int -> char @@ portable = "%caml_ba_unsafe_ref_1"
 
 let%expect_test "basic unsafe char getters" =
   try_getters ~first_bigstring_byte:1 [ (fun t ~pos -> unsafe_get t pos) ]

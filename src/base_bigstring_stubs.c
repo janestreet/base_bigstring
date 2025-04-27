@@ -233,6 +233,22 @@ CAMLprim value bigstring_find(value v_str, value v_needle,
   return ptr_to_offset(start, v_pos, r);
 }
 
+CAMLprim value bigstring_strncmp(value v_str1, value v_pos1,
+                                 value v_str2, value v_pos2,
+                                 value v_len) {
+  char* str1;
+  char* str2;
+  int res;
+
+  str1 = get_bstr(v_str1, v_pos1);
+  str2 = get_bstr(v_str2, v_pos2);
+
+  res = strncmp(str1, str2, Long_val(v_len));
+  if (res < 0) return Val_int(-1);
+  if (res > 0) return Val_int(1);
+  return Val_int(0);
+}
+
 CAMLprim value bigstring_rfind(value v_str, value v_needle,
                                value v_pos, value v_len)
 {

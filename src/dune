@@ -9,4 +9,7 @@
  (libraries base int_repr sexplib)
  (ocamlopt_flags :standard -O3)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane))
+ (wasm_of_ocaml
+  (javascript_files runtime.js)
+  (wasm_files runtime.wat)))

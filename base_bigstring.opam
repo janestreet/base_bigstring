@@ -15,7 +15,7 @@ depends: [
   "int_repr"
   "ppx_jane"
   "sexplib"
-  "dune"     {>= "3.11.0"}
+  "dune"     {>= "3.17.0"}
 ]
 available: arch != "arm32" & arch != "x86_32"
 synopsis: "String type based on [Bigarray], for use in I/O and C-bindings"

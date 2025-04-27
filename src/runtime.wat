@@ -32,6 +32,10 @@
       (func $bigstring_memcmp_bytes_stub
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
          (param (ref eq)) (result (ref eq))))
+   (import "env" "caml_bigstring_strncmp"
+      (func $bigstring_strncmp
+         (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (param (ref eq)) (result (ref eq))))
    (import "env" "caml_bigstring_memchr"
       (func $bigstring_find
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
@@ -76,6 +80,8 @@
    (export "bigstring_memcmp_stub" (func $bigstring_memcmp_stub))
 
    (export "bigstring_memcmp_bytes_stub" (func $bigstring_memcmp_bytes_stub))
+
+   (export "bigstring_strncmp" (func $bigstring_strncmp))
 
    (func (export "internalhash_fold_bigstring")
       (param (ref eq)) (param (ref eq)) (result (ref eq))

@@ -11,23 +11,30 @@ end
 module Array1 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Stdlib.Bigarray.Array1.t
 
-  external get : local_ ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
-  external set : local_ ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_set_1"
-  external unsafe_get : local_ ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
+  external get : local_ ('a, 'b, 'c) t -> int -> 'a @@ portable = "%caml_ba_ref_1"
+  external set : local_ ('a, 'b, 'c) t -> int -> 'a -> unit @@ portable = "%caml_ba_set_1"
+
+  external unsafe_get
+    :  local_ ('a, 'b, 'c) t
+    -> int
+    -> 'a
+    @@ portable
+    = "%caml_ba_unsafe_ref_1"
 
   external unsafe_set
     :  local_ ('a, 'b, 'c) t
     -> int
     -> 'a
     -> unit
+    @@ portable
     = "%caml_ba_unsafe_set_1"
 
-  external dim : local_ ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
+  external dim : local_ ('a, 'b, 'c) t -> int @@ portable = "%caml_ba_dim_1"
 end
 
 include Bigstring0
 
-external aux_create : size:int -> t = "bigstring_alloc_v2"
+external aux_create : size:int -> t @@ portable = "bigstring_alloc_v2"
 
 let sprintf = Printf.sprintf
 
@@ -46,7 +53,8 @@ let create size =
 let empty = create 0
 let length = Array1.dim
 
-external is_mmapped : (t[@local_opt]) -> bool = "bigstring_is_mmapped_stub" [@@noalloc]
+external is_mmapped : (t[@local_opt]) -> bool @@ portable = "bigstring_is_mmapped_stub"
+[@@noalloc]
 
 let init n ~f =
   let t = create n in
@@ -86,14 +94,22 @@ external unsafe_blit
   -> dst_pos:int
   -> len:int
   -> unit
+  @@ portable
   = "bigstring_blit_stub"
 [@@noalloc]
 
 (* Exposing the external version of get/set supports better inlining. *)
-external get : (t[@local_opt]) -> int -> char = "%caml_ba_ref_1"
-external unsafe_get : (t[@local_opt]) -> int -> char = "%caml_ba_unsafe_ref_1"
-external set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_set_1"
-external unsafe_set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_unsafe_set_1"
+external get : (t[@local_opt]) -> int -> char @@ portable = "%caml_ba_ref_1"
+external unsafe_get : (t[@local_opt]) -> int -> char @@ portable = "%caml_ba_unsafe_ref_1"
+external set : (t[@local_opt]) -> int -> char -> unit @@ portable = "%caml_ba_set_1"
+
+external unsafe_set
+  :  (t[@local_opt])
+  -> int
+  -> char
+  -> unit
+  @@ portable
+  = "%caml_ba_unsafe_set_1"
 
 module Bigstring_sequence = struct
   type nonrec t = t
@@ -109,14 +125,14 @@ module Bytes_sequence = struct
   let length = Bytes.length
 end
 
-include Blit.Make (struct
+include%template Blit.Make [@modality portable] (struct
     include Bigstring_sequence
 
     let unsafe_blit = unsafe_blit
   end)
 
-module From_bytes =
-  Blit.Make_distinct
+module%template From_bytes =
+  Blit.Make_distinct [@modality portable]
     (Bytes_sequence)
     (struct
       external unsafe_blit
@@ -126,14 +142,15 @@ module From_bytes =
         -> dst_pos:int
         -> len:int
         -> unit
+        @@ portable
         = "bigstring_blit_bytes_bigstring_stub"
       [@@noalloc]
 
       include Bigstring_sequence
     end)
 
-module To_bytes =
-  Blit.Make_distinct
+module%template To_bytes =
+  Blit.Make_distinct [@modality portable]
     (Bigstring_sequence)
     (struct
       external unsafe_blit
@@ -143,14 +160,15 @@ module To_bytes =
         -> dst_pos:int
         -> len:int
         -> unit
+        @@ portable
         = "bigstring_blit_bigstring_bytes_stub"
       [@@noalloc]
 
       include Bytes_sequence
     end)
 
-module From_string =
-  Blit.Make_distinct
+module%template From_string =
+  Blit.Make_distinct [@modality portable]
     (struct
       type t = string
 
@@ -164,6 +182,7 @@ module From_string =
         -> dst_pos:int
         -> len:int
         -> unit
+        @@ portable
         = "bigstring_blit_string_bigstring_stub"
       [@@noalloc]
 
@@ -172,7 +191,8 @@ module From_string =
 
 module To_string = struct
   include To_bytes
-  include Blit.Make_to_string (Bigstring0) (To_bytes)
+
+  include%template Blit.Make_to_string [@modality portable] (Bigstring0) (To_bytes)
 end
 
 let of_string = From_string.subo
@@ -232,6 +252,7 @@ external unsafe_memset
   -> len:int
   -> char
   -> unit
+  @@ portable
   = "bigstring_memset_stub"
 [@@noalloc]
 
@@ -249,6 +270,7 @@ external unsafe_memcmp
   -> pos2:int
   -> len:int
   -> int
+  @@ portable
   = "bigstring_memcmp_stub"
 [@@noalloc]
 
@@ -265,6 +287,7 @@ external unsafe_memcmp_bytes
   -> pos2:int
   -> len:int
   -> int
+  @@ portable
   = "bigstring_memcmp_bytes_stub"
 [@@noalloc]
 
@@ -286,6 +309,17 @@ let memcmp_string (local_ t) ~pos1 (local_ str) ~pos2 ~len =
     ~len [@nontail]
 ;;
 
+external unsafe_strncmp
+  :  (t[@local_opt])
+  -> pos1:int
+  -> (t[@local_opt])
+  -> pos2:int
+  -> len:int
+  -> int
+  @@ portable
+  = "bigstring_strncmp"
+[@@noalloc]
+
 let compare__local t1 t2 =
   if phys_equal t1 t2
   then 0
@@ -304,11 +338,12 @@ external internalhash_fold_bigstring
   :  Hash.state
   -> t
   -> Hash.state
+  @@ portable
   = "internalhash_fold_bigstring"
 [@@noalloc]
 
 let hash_fold_t = internalhash_fold_bigstring
-let hash = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t
+let hash t = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t t
 
 type t_frozen = t [@@deriving compare ~localize, globalize, hash, sexp, sexp_grammar]
 
@@ -331,6 +366,7 @@ external unsafe_find
   -> pos:int
   -> len:int
   -> int
+  @@ portable
   = "bigstring_find"
 [@@noalloc]
 
@@ -340,6 +376,7 @@ external unsafe_rfind
   -> pos:int
   -> len:int
   -> int
+  @@ portable
   = "bigstring_rfind"
 [@@noalloc]
 
@@ -351,6 +388,7 @@ external unsafe_memmem
   -> needle_pos:int
   -> needle_len:int
   -> int
+  @@ portable
   = "bigstring_memmem_bytecode" "bigstring_memmem"
 [@@noalloc]
 
@@ -389,23 +427,37 @@ let memmem
 
 (* Binary-packing like accessors *)
 
-external int32_of_int : int -> int32 = "%int32_of_int"
-external int32_to_int : local_ int32 -> int = "%int32_to_int"
-external int64_of_int : int -> int64 = "%int64_of_int"
-external int64_to_int : local_ int64 -> int = "%int64_to_int"
-external swap16 : int -> int = "%bswap16"
-external swap32 : local_ int32 -> int32 = "%bswap_int32"
-external swap64 : local_ int64 -> int64 = "%bswap_int64"
-external unsafe_get_16 : local_ t -> int -> int = "%caml_bigstring_get16u"
-external unsafe_get_32 : local_ t -> int -> int32 = "%caml_bigstring_get32u"
-external unsafe_get_64 : local_ t -> int -> (int64[@local_opt]) = "%caml_bigstring_get64u"
-external unsafe_set_16 : local_ t -> int -> int -> unit = "%caml_bigstring_set16u"
+external int32_of_int : int -> int32 @@ portable = "%int32_of_int"
+external int32_to_int : local_ int32 -> int @@ portable = "%int32_to_int"
+external int64_of_int : int -> int64 @@ portable = "%int64_of_int"
+external int64_to_int : local_ int64 -> int @@ portable = "%int64_to_int"
+external swap16 : int -> int @@ portable = "%bswap16"
+external swap32 : local_ int32 -> int32 @@ portable = "%bswap_int32"
+external swap64 : local_ int64 -> int64 @@ portable = "%bswap_int64"
+external unsafe_get_16 : local_ t -> int -> int @@ portable = "%caml_bigstring_get16u"
+external unsafe_get_32 : local_ t -> int -> int32 @@ portable = "%caml_bigstring_get32u"
+
+external unsafe_get_64
+  :  local_ t
+  -> int
+  -> (int64[@local_opt])
+  @@ portable
+  = "%caml_bigstring_get64u"
+
+external unsafe_set_16
+  :  local_ t
+  -> int
+  -> int
+  -> unit
+  @@ portable
+  = "%caml_bigstring_set16u"
 
 external unsafe_set_32
   :  local_ t
   -> int
   -> local_ int32
   -> unit
+  @@ portable
   = "%caml_bigstring_set32u"
 
 external unsafe_set_64
@@ -413,6 +465,7 @@ external unsafe_set_64
   -> int
   -> local_ int64
   -> unit
+  @@ portable
   = "%caml_bigstring_set64u"
 
 let[@inline always] get_16 (t : t) (pos : int) : int =
@@ -910,7 +963,7 @@ let set_uint32_be_exn t ~pos n =
 let get_uint32_le t ~pos = uint32_of_int32_t (get_int32_t_le t ~pos)
 let get_uint32_be t ~pos = uint32_of_int32_t (get_int32_t_be t ~pos)
 
-module Int_repr = struct
+module%template Int_repr = struct
   module F = struct
     type t = t_frozen
 
@@ -931,8 +984,8 @@ module Int_repr = struct
     end
   end
 
-  include Int_repr.Make_get (F)
-  include Int_repr.Make_set (F)
+  include Int_repr.Make_get [@modality portable] (F)
+  include Int_repr.Make_set [@modality portable] (F)
 
   module Unsafe = struct
     module F = struct
@@ -952,8 +1005,8 @@ module Int_repr = struct
       end
     end
 
-    include Int_repr.Make_get (F)
-    include Int_repr.Make_set (F)
+    include Int_repr.Make_get [@modality portable] (F)
+    include Int_repr.Make_set [@modality portable] (F)
   end
 end
 
