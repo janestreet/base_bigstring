@@ -102,14 +102,14 @@ module Bytes_sequence = struct
   let length = Bytes.length
 end
 
-include Blit.Make (struct
+include%template Blit.Make [@modality portable] (struct
     include Bigstring_sequence
 
     let unsafe_blit = unsafe_blit
   end)
 
-module From_bytes =
-  Blit.Make_distinct
+module%template From_bytes =
+  Blit.Make_distinct [@modality portable]
     (Bytes_sequence)
     (struct
       external unsafe_blit
@@ -125,8 +125,8 @@ module From_bytes =
       include Bigstring_sequence
     end)
 
-module To_bytes =
-  Blit.Make_distinct
+module%template To_bytes =
+  Blit.Make_distinct [@modality portable]
     (Bigstring_sequence)
     (struct
       external unsafe_blit
@@ -142,8 +142,8 @@ module To_bytes =
       include Bytes_sequence
     end)
 
-module From_string =
-  Blit.Make_distinct
+module%template From_string =
+  Blit.Make_distinct [@modality portable]
     (struct
       type t = string
 
@@ -165,7 +165,8 @@ module From_string =
 
 module To_string = struct
   include To_bytes
-  include Blit.Make_to_string (Bigstring0) (To_bytes)
+
+  include%template Blit.Make_to_string [@modality portable] (Bigstring0) (To_bytes)
 end
 
 let of_string = From_string.subo
@@ -279,6 +280,16 @@ let memcmp_string t ~pos1 str ~pos2 ~len =
     ~len [@nontail]
 ;;
 
+external unsafe_strncmp
+  :  (t[@local_opt])
+  -> pos1:int
+  -> (t[@local_opt])
+  -> pos2:int
+  -> len:int
+  -> int
+  = "bigstring_strncmp"
+[@@noalloc]
+
 let compare__local t1 t2 =
   if phys_equal t1 t2
   then 0
@@ -301,7 +312,7 @@ external internalhash_fold_bigstring
 [@@noalloc]
 
 let hash_fold_t = internalhash_fold_bigstring
-let hash = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t
+let hash t = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t t
 
 type t_frozen = t [@@deriving compare ~localize, globalize, hash, sexp, sexp_grammar]
 
@@ -889,7 +900,7 @@ let set_uint32_be_exn t ~pos n =
 let get_uint32_le t ~pos = uint32_of_int32_t (get_int32_t_le t ~pos)
 let get_uint32_be t ~pos = uint32_of_int32_t (get_int32_t_be t ~pos)
 
-module Int_repr = struct
+module%template Int_repr = struct
   module F = struct
     type t = t_frozen
 
@@ -910,8 +921,8 @@ module Int_repr = struct
     end
   end
 
-  include Int_repr.Make_get (F)
-  include Int_repr.Make_set (F)
+  include Int_repr.Make_get [@modality portable] (F)
+  include Int_repr.Make_set [@modality portable] (F)
 
   module Unsafe = struct
     module F = struct
@@ -931,8 +942,8 @@ module Int_repr = struct
       end
     end
 
-    include Int_repr.Make_get (F)
-    include Int_repr.Make_set (F)
+    include Int_repr.Make_get [@modality portable] (F)
+    include Int_repr.Make_set [@modality portable] (F)
   end
 end
 

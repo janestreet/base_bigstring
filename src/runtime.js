@@ -111,3 +111,18 @@ function bigstring_memmem_bytecode(haystack, needle, haystack_pos, haystack_len,
   }
   return -1;
 }
+
+//Provides: bigstring_strncmp
+//Requires: caml_ba_get_1
+function bigstring_strncmp(v_s1, v_s1_pos, v_s2, v_s2_pos, v_len) {
+  for (var i = 0; i < v_len; ++i) {
+    var a = caml_ba_get_1(v_s1, v_s1_pos + i);
+    var b = caml_ba_get_1(v_s2, v_s2_pos + i);
+    if (a < b) return -1;
+    if (a > b) return 1;
+
+    if (a === 0) return 0;
+  }
+
+  return 0;
+}

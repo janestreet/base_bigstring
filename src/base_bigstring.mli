@@ -16,8 +16,7 @@ type t_frozen = t [@@deriving compare ~localize, globalize, hash, sexp, sexp_gra
 (** {2 Creation and string conversion} *)
 
 (** [create length]
-    @return a new bigstring having [length].
-    Content is undefined. *)
+    @return a new bigstring having [length]. Content is undefined. *)
 val create : int -> t
 
 (** [empty] is a bigstring of length 0 *)
@@ -26,22 +25,28 @@ val empty : t
 (** [init n ~f] creates a bigstring [t] of length [n], with [t.{i} = f i]. *)
 val init : int -> f:(int -> char) -> t
 
-(** [of_string ?pos ?len str] @return a new bigstring that is equivalent
-    to the substring of length [len] in [str] starting at position [pos].
+(** [of_string ?pos ?len str]
+    @return
+      a new bigstring that is equivalent to the substring of length [len] in [str]
+      starting at position [pos].
 
     @param pos default = 0
     @param len default = [String.length str - pos] *)
 val of_string : ?pos:int -> ?len:int -> string -> t
 
-(** [of_bytes ?pos ?len str] @return a new bigstring that is equivalent
-    to the subbytes of length [len] in [str] starting at position [pos].
+(** [of_bytes ?pos ?len str]
+    @return
+      a new bigstring that is equivalent to the subbytes of length [len] in [str] starting
+      at position [pos].
 
     @param pos default = 0
     @param len default = [Bytes.length str - pos] *)
 val of_bytes : ?pos:int -> ?len:int -> bytes -> t
 
-(** [to_string ?pos ?len bstr] @return a new string that is equivalent
-    to the substring of length [len] in [bstr] starting at position [pos].
+(** [to_string ?pos ?len bstr]
+    @return
+      a new string that is equivalent to the substring of length [len] in [bstr] starting
+      at position [pos].
 
     @param pos default = 0
     @param len default = [length bstr - pos]
@@ -49,8 +54,10 @@ val of_bytes : ?pos:int -> ?len:int -> bytes -> t
     @raise Invalid_argument if the string would exceed runtime limits. *)
 val to_string : ?pos:int -> ?len:int -> t -> string
 
-(** [to_bytes ?pos ?len bstr] @return a new byte sequence that is equivalent
-    to the substring of length [len] in [bstr] starting at position [pos].
+(** [to_bytes ?pos ?len bstr]
+    @return
+      a new byte sequence that is equivalent to the substring of length [len] in [bstr]
+      starting at position [pos].
 
     @param pos default = 0
     @param len default = [length bstr - pos]
@@ -63,21 +70,24 @@ val concat : ?sep:t -> t list -> t
 
 (** {2 Checking} *)
 
-(** [check_args ~loc ~pos ~len bstr] checks the position and length
-    arguments [pos] and [len] for bigstrings [bstr].  @raise
-    Invalid_argument if these arguments are illegal for the given
-    bigstring using [loc] to indicate the calling context. *)
+(** [check_args ~loc ~pos ~len bstr] checks the position and length arguments [pos] and
+    [len] for bigstrings [bstr].
+    @raise 
+      Invalid_argument if these arguments are illegal for the given bigstring using [loc]
+      to indicate the calling context. *)
 val check_args : loc:string -> pos:int -> len:int -> t -> unit
 
-(** [get_opt_len bstr ~pos opt_len] @return the length of a subbigstring
-    in [bstr] starting at position [pos] and given optional length
-    [opt_len].  This function does not check the validity of its
-    arguments.  Use {!check_args} for that purpose. *)
+(** [get_opt_len bstr ~pos opt_len]
+    @return
+      the length of a subbigstring in [bstr] starting at position [pos] and given optional
+      length [opt_len]. This function does not check the validity of its arguments. Use
+      {!check_args} for that purpose. *)
 val get_opt_len : t -> pos:int -> int option -> int
 
 (** {2 Accessors} *)
 
-(** [length bstr] @return the length of bigstring [bstr]. *)
+(** [length bstr]
+    @return the length of bigstring [bstr]. *)
 val length : t -> int
 
 (** [get t pos] returns the character at [pos] *)
@@ -92,15 +102,15 @@ external set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_set_1"
 (** [unsafe_set t pos] sets the character at [pos], without bounds checks. *)
 external unsafe_set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 
-(** [is_mmapped bstr] @return whether the bigstring [bstr] is
-    memory-mapped. *)
+(** [is_mmapped bstr]
+    @return whether the bigstring [bstr] is memory-mapped. *)
 external is_mmapped : (t[@local_opt]) -> bool = "bigstring_is_mmapped_stub"
 [@@noalloc]
 
 (** {2 Blitting} *)
 
-(** [blit ~src ?src_pos ?src_len ~dst ?dst_pos ()] blits [src_len] characters
-    from [src] starting at position [src_pos] to [dst] at position [dst_pos].
+(** [blit ~src ?src_pos ?src_len ~dst ?dst_pos ()] blits [src_len] characters from [src]
+    starting at position [src_pos] to [dst] at position [dst_pos].
 
     @raise Invalid_argument if the designated ranges are out of bounds. *)
 
@@ -143,6 +153,23 @@ val memcmp_bytes : t -> pos1:int -> Bytes.t -> pos2:int -> len:int -> int
 
 (** [memcmp_string], for efficient [memcmp] between [Bigstring] and [string] data. *)
 val memcmp_string : t -> pos1:int -> string -> pos2:int -> len:int -> int
+
+(** Compares up to [len] characters of two (potentially null-terminated) strings beginning
+    at [pos1] and [pos2] of their respective [Bigstring]s. This function starts comparing
+    the first character of each string. If they are equal to each other, it continues with
+    the following pairs until the characters differ, until a terminating null-character is
+    reached, or until [len] characters match in both strings, whichever happens first.
+
+    [unsafe_strncmp] does no bounds checking. *)
+external unsafe_strncmp
+  :  (t[@local_opt])
+  -> pos1:int
+  -> (t[@local_opt])
+  -> pos2:int
+  -> len:int
+  -> int
+  = "bigstring_strncmp"
+[@@noalloc]
 
 (** {2 Search} *)
 
@@ -205,7 +232,8 @@ external unsafe_memmem
   = "bigstring_memmem_bytecode" "bigstring_memmem"
 [@@noalloc]
 
-(** {2 Accessors for parsing binary values, analogous to [Binary_packing]}
+(** {v
+ {2 Accessors for parsing binary values, analogous to [Binary_packing]}
 
     These are in [Bigstring] rather than a separate module because:
 
@@ -227,7 +255,8 @@ external unsafe_memmem
     <endian>    ::= _le | _be | ''
 
     The [unsafe_] prefix indicates that these functions do no bounds checking and silently
-    truncate out-of-range numeric arguments. *)
+    truncate out-of-range numeric arguments.
+    v} *)
 
 val get_int8 : t -> pos:int -> int
 val set_int8_exn : t -> pos:int -> int -> unit
@@ -280,7 +309,7 @@ val unsafe_set_uint32_be : t -> pos:int -> int -> unit
     read (or written), as an ocaml immediate integer, as such it is actually 63 bits. If
     the user is confident that the range of values used in practice will not require
     64-bit precision (i.e. Less than Max_Long), then we can avoid allocation and use an
-    immediate.  If the user is wrong, an exception will be thrown (for get). *)
+    immediate. If the user is wrong, an exception will be thrown (for get). *)
 
 (** {2 64-bit signed values} *)
 
