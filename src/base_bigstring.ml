@@ -11,13 +11,19 @@ end
 module Array1 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Stdlib.Bigarray.Array1.t
 
-  external get : local_ ('a, 'b, 'c) t -> int -> 'a @@ portable = "%caml_ba_ref_1"
+  external get
+    :  local_ ('a, 'b, 'c) t @ shared
+    -> int
+    -> 'a @ shared
+    @@ portable
+    = "%caml_ba_ref_1"
+
   external set : local_ ('a, 'b, 'c) t -> int -> 'a -> unit @@ portable = "%caml_ba_set_1"
 
   external unsafe_get
-    :  local_ ('a, 'b, 'c) t
+    :  local_ ('a, 'b, 'c) t @ shared
     -> int
-    -> 'a
+    -> 'a @ shared
     @@ portable
     = "%caml_ba_unsafe_ref_1"
 
@@ -29,7 +35,7 @@ module Array1 = struct
     @@ portable
     = "%caml_ba_unsafe_set_1"
 
-  external dim : local_ ('a, 'b, 'c) t -> int @@ portable = "%caml_ba_dim_1"
+  external dim : local_ ('a, 'b, 'c) t @ contended -> int @@ portable = "%caml_ba_dim_1"
 end
 
 include Bigstring0
@@ -99,8 +105,15 @@ external unsafe_blit
 [@@noalloc]
 
 (* Exposing the external version of get/set supports better inlining. *)
-external get : (t[@local_opt]) -> int -> char @@ portable = "%caml_ba_ref_1"
-external unsafe_get : (t[@local_opt]) -> int -> char @@ portable = "%caml_ba_unsafe_ref_1"
+external get : (t[@local_opt]) @ shared -> int -> char @@ portable = "%caml_ba_ref_1"
+
+external unsafe_get
+  :  (t[@local_opt]) @ shared
+  -> int
+  -> char
+  @@ portable
+  = "%caml_ba_unsafe_ref_1"
+
 external set : (t[@local_opt]) -> int -> char -> unit @@ portable = "%caml_ba_set_1"
 
 external unsafe_set
@@ -434,11 +447,23 @@ external int64_to_int : local_ int64 -> int @@ portable = "%int64_to_int"
 external swap16 : int -> int @@ portable = "%bswap16"
 external swap32 : local_ int32 -> int32 @@ portable = "%bswap_int32"
 external swap64 : local_ int64 -> int64 @@ portable = "%bswap_int64"
-external unsafe_get_16 : local_ t -> int -> int @@ portable = "%caml_bigstring_get16u"
-external unsafe_get_32 : local_ t -> int -> int32 @@ portable = "%caml_bigstring_get32u"
+
+external unsafe_get_16
+  :  t @ local shared
+  -> int
+  -> int
+  @@ portable
+  = "%caml_bigstring_get16u"
+
+external unsafe_get_32
+  :  t @ local shared
+  -> int
+  -> int32
+  @@ portable
+  = "%caml_bigstring_get32u"
 
 external unsafe_get_64
-  :  local_ t
+  :  t @ local shared
   -> int
   -> (int64[@local_opt])
   @@ portable

@@ -90,13 +90,13 @@ val get_opt_len : local_ t -> pos:int -> local_ int option -> int
 
 (** [length bstr]
     @return the length of bigstring [bstr]. *)
-val length : local_ t -> int
+val length : t @ contended local -> int
 
 (** [get t pos] returns the character at [pos] *)
-external get : (t[@local_opt]) -> int -> char = "%caml_ba_ref_1"
+external get : (t[@local_opt]) @ shared -> int -> char = "%caml_ba_ref_1"
 
 (** [unsafe_get t pos] returns the character at [pos], without bounds checks. *)
-external unsafe_get : (t[@local_opt]) -> int -> char = "%caml_ba_unsafe_ref_1"
+external unsafe_get : (t[@local_opt]) @ shared -> int -> char = "%caml_ba_unsafe_ref_1"
 
 (** [set t pos] sets the character at [pos] *)
 external set : (t[@local_opt]) -> int -> char -> unit = "%caml_ba_set_1"
@@ -260,50 +260,50 @@ external unsafe_memmem
     truncate out-of-range numeric arguments.
     v} *)
 
-val get_int8 : local_ t -> pos:int -> int
+val get_int8 : t @ local shared -> pos:int -> int
 val set_int8_exn : local_ t -> pos:int -> int -> unit
-val get_uint8 : local_ t -> pos:int -> int
+val get_uint8 : t @ local shared -> pos:int -> int
 val set_uint8_exn : local_ t -> pos:int -> int -> unit
-val unsafe_get_int8 : local_ t -> pos:int -> int
+val unsafe_get_int8 : t @ local shared -> pos:int -> int
 val unsafe_set_int8 : local_ t -> pos:int -> int -> unit
-val unsafe_get_uint8 : local_ t -> pos:int -> int
+val unsafe_get_uint8 : t @ local shared -> pos:int -> int
 val unsafe_set_uint8 : local_ t -> pos:int -> int -> unit
 
 (** {2 16-bit methods} *)
 
-val get_int16_le : local_ t -> pos:int -> int
-val get_int16_be : local_ t -> pos:int -> int
+val get_int16_le : t @ local shared -> pos:int -> int
+val get_int16_be : t @ local shared -> pos:int -> int
 val set_int16_le_exn : local_ t -> pos:int -> int -> unit
 val set_int16_be_exn : local_ t -> pos:int -> int -> unit
-val unsafe_get_int16_le : local_ t -> pos:int -> int
-val unsafe_get_int16_be : local_ t -> pos:int -> int
+val unsafe_get_int16_le : t @ local shared -> pos:int -> int
+val unsafe_get_int16_be : t @ local shared -> pos:int -> int
 val unsafe_set_int16_le : local_ t -> pos:int -> int -> unit
 val unsafe_set_int16_be : local_ t -> pos:int -> int -> unit
-val get_uint16_le : local_ t -> pos:int -> int
-val get_uint16_be : local_ t -> pos:int -> int
+val get_uint16_le : t @ local shared -> pos:int -> int
+val get_uint16_be : t @ local shared -> pos:int -> int
 val set_uint16_le_exn : local_ t -> pos:int -> int -> unit
 val set_uint16_be_exn : local_ t -> pos:int -> int -> unit
-val unsafe_get_uint16_le : local_ t -> pos:int -> int
-val unsafe_get_uint16_be : local_ t -> pos:int -> int
+val unsafe_get_uint16_le : t @ local shared -> pos:int -> int
+val unsafe_get_uint16_be : t @ local shared -> pos:int -> int
 val unsafe_set_uint16_le : local_ t -> pos:int -> int -> unit
 val unsafe_set_uint16_be : local_ t -> pos:int -> int -> unit
 
 (** {2 32-bit methods} *)
 
-val get_int32_le : local_ t -> pos:int -> int
-val get_int32_be : local_ t -> pos:int -> int
+val get_int32_le : t @ local shared -> pos:int -> int
+val get_int32_be : t @ local shared -> pos:int -> int
 val set_int32_le_exn : local_ t -> pos:int -> int -> unit
 val set_int32_be_exn : local_ t -> pos:int -> int -> unit
-val unsafe_get_int32_le : local_ t -> pos:int -> int
-val unsafe_get_int32_be : local_ t -> pos:int -> int
+val unsafe_get_int32_le : t @ local shared -> pos:int -> int
+val unsafe_get_int32_be : t @ local shared -> pos:int -> int
 val unsafe_set_int32_le : local_ t -> pos:int -> int -> unit
 val unsafe_set_int32_be : local_ t -> pos:int -> int -> unit
-val get_uint32_le : local_ t -> pos:int -> int
-val get_uint32_be : local_ t -> pos:int -> int
+val get_uint32_le : t @ local shared -> pos:int -> int
+val get_uint32_be : t @ local shared -> pos:int -> int
 val set_uint32_le_exn : local_ t -> pos:int -> int -> unit
 val set_uint32_be_exn : local_ t -> pos:int -> int -> unit
-val unsafe_get_uint32_le : local_ t -> pos:int -> int
-val unsafe_get_uint32_be : local_ t -> pos:int -> int
+val unsafe_get_uint32_le : t @ local shared -> pos:int -> int
+val unsafe_get_uint32_be : t @ local shared -> pos:int -> int
 val unsafe_set_uint32_le : local_ t -> pos:int -> int -> unit
 val unsafe_set_uint32_be : local_ t -> pos:int -> int -> unit
 
@@ -315,49 +315,49 @@ val unsafe_set_uint32_be : local_ t -> pos:int -> int -> unit
 
 (** {2 64-bit signed values} *)
 
-val get_int64_le_exn : local_ t -> pos:int -> int
-val get_int64_be_exn : local_ t -> pos:int -> int
-val get_int64_le_trunc : local_ t -> pos:int -> int
-val get_int64_be_trunc : local_ t -> pos:int -> int
+val get_int64_le_exn : t @ local shared -> pos:int -> int
+val get_int64_be_exn : t @ local shared -> pos:int -> int
+val get_int64_le_trunc : t @ local shared -> pos:int -> int
+val get_int64_be_trunc : t @ local shared -> pos:int -> int
 val set_int64_le : local_ t -> pos:int -> int -> unit
 val set_int64_be : local_ t -> pos:int -> int -> unit
-val unsafe_get_int64_le_exn : local_ t -> pos:int -> int
-val unsafe_get_int64_be_exn : local_ t -> pos:int -> int
-val unsafe_get_int64_le_trunc : local_ t -> pos:int -> int
-val unsafe_get_int64_be_trunc : local_ t -> pos:int -> int
+val unsafe_get_int64_le_exn : t @ local shared -> pos:int -> int
+val unsafe_get_int64_be_exn : t @ local shared -> pos:int -> int
+val unsafe_get_int64_le_trunc : t @ local shared -> pos:int -> int
+val unsafe_get_int64_be_trunc : t @ local shared -> pos:int -> int
 val unsafe_set_int64_le : local_ t -> pos:int -> int -> unit
 val unsafe_set_int64_be : local_ t -> pos:int -> int -> unit
 
 (** {2 64-bit unsigned values} *)
 
-val get_uint64_be_exn : local_ t -> pos:int -> int
-val get_uint64_le_exn : local_ t -> pos:int -> int
+val get_uint64_be_exn : t @ local shared -> pos:int -> int
+val get_uint64_le_exn : t @ local shared -> pos:int -> int
 val set_uint64_le_exn : local_ t -> pos:int -> int -> unit
 val set_uint64_be_exn : local_ t -> pos:int -> int -> unit
-val unsafe_get_uint64_be_exn : local_ t -> pos:int -> int
-val unsafe_get_uint64_le_exn : local_ t -> pos:int -> int
+val unsafe_get_uint64_be_exn : t @ local shared -> pos:int -> int
+val unsafe_get_uint64_le_exn : t @ local shared -> pos:int -> int
 val unsafe_set_uint64_le : local_ t -> pos:int -> int -> unit
 val unsafe_set_uint64_be : local_ t -> pos:int -> int -> unit
 
 (** {2 32-bit methods with full precision} *)
 
-val get_int32_t_le : local_ t -> pos:int -> Int32.t
-val get_int32_t_be : local_ t -> pos:int -> Int32.t
+val get_int32_t_le : t @ local shared -> pos:int -> Int32.t
+val get_int32_t_be : t @ local shared -> pos:int -> Int32.t
 val set_int32_t_le : local_ t -> pos:int -> local_ Int32.t -> unit
 val set_int32_t_be : local_ t -> pos:int -> local_ Int32.t -> unit
-val unsafe_get_int32_t_le : local_ t -> pos:int -> Int32.t
-val unsafe_get_int32_t_be : local_ t -> pos:int -> Int32.t
+val unsafe_get_int32_t_le : t @ local shared -> pos:int -> Int32.t
+val unsafe_get_int32_t_be : t @ local shared -> pos:int -> Int32.t
 val unsafe_set_int32_t_le : local_ t -> pos:int -> local_ Int32.t -> unit
 val unsafe_set_int32_t_be : local_ t -> pos:int -> local_ Int32.t -> unit
 
 (** {2 64-bit methods with full precision} *)
 
-val get_int64_t_le : local_ t -> pos:int -> Int64.t
-val get_int64_t_be : local_ t -> pos:int -> Int64.t
+val get_int64_t_le : t @ local shared -> pos:int -> Int64.t
+val get_int64_t_be : t @ local shared -> pos:int -> Int64.t
 val set_int64_t_le : local_ t -> pos:int -> local_ Int64.t -> unit
 val set_int64_t_be : local_ t -> pos:int -> local_ Int64.t -> unit
-val unsafe_get_int64_t_le : local_ t -> pos:int -> Int64.t
-val unsafe_get_int64_t_be : local_ t -> pos:int -> Int64.t
+val unsafe_get_int64_t_le : t @ local shared -> pos:int -> Int64.t
+val unsafe_get_int64_t_be : t @ local shared -> pos:int -> Int64.t
 val unsafe_set_int64_t_le : local_ t -> pos:int -> local_ Int64.t -> unit
 val unsafe_set_int64_t_be : local_ t -> pos:int -> local_ Int64.t -> unit
 
@@ -370,10 +370,10 @@ val get_string : local_ t -> pos:int -> len:int -> string
 val unsafe_get_string : local_ t -> pos:int -> len:int -> string
 
 module Local : sig
-  val get_int64_t_le : local_ t -> pos:int -> local_ Int64.t
-  val get_int64_t_be : local_ t -> pos:int -> local_ Int64.t
-  val unsafe_get_int64_t_le : local_ t -> pos:int -> local_ Int64.t
-  val unsafe_get_int64_t_be : local_ t -> pos:int -> local_ Int64.t
+  val get_int64_t_le : t @ local shared -> pos:int -> local_ Int64.t
+  val get_int64_t_be : t @ local shared -> pos:int -> local_ Int64.t
+  val unsafe_get_int64_t_le : t @ local shared -> pos:int -> local_ Int64.t
+  val unsafe_get_int64_t_be : t @ local shared -> pos:int -> local_ Int64.t
   val get_string : local_ t -> pos:int -> len:int -> local_ string
   val unsafe_get_string : local_ t -> pos:int -> len:int -> local_ string
 end

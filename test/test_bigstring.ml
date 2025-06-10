@@ -827,7 +827,7 @@ let%expect_test "basic char unsafe setters" =
     |}]
 ;;
 
-external get : local_ t_frozen -> int -> char @@ portable = "%caml_ba_ref_1"
+external get : t_frozen @ local shared -> int -> char @@ portable = "%caml_ba_ref_1"
 
 let%expect_test "basic char getters" =
   try_getters ~first_bigstring_byte:1 [ (fun t ~pos -> get t pos) ]
@@ -835,7 +835,12 @@ let%expect_test "basic char getters" =
   [%expect {| ((Ok "\001")) |}]
 ;;
 
-external unsafe_get : local_ t -> int -> char @@ portable = "%caml_ba_unsafe_ref_1"
+external unsafe_get
+  :  t @ local shared
+  -> int
+  -> char
+  @@ portable
+  = "%caml_ba_unsafe_ref_1"
 
 let%expect_test "basic unsafe char getters" =
   try_getters ~first_bigstring_byte:1 [ (fun t ~pos -> unsafe_get t pos) ]
