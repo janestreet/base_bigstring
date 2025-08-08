@@ -1038,7 +1038,7 @@ end
 type nonrec t = t
 
 type nonrec t_frozen = t_frozen
-[@@deriving compare ~localize, globalize, hash, sexp, sexp_grammar]
+[@@deriving compare ~localize, equal ~localize, globalize, hash, sexp, sexp_grammar]
 
 (* Effectively tested in lib/int_repr *)
 module Int_repr = Base_bigstring.Int_repr
