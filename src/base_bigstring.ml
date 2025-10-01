@@ -35,7 +35,7 @@ module Array1 = struct
     @@ portable
     = "%caml_ba_unsafe_set_1"
 
-  external dim : local_ ('a, 'b, 'c) t @ contended -> int @@ portable = "%caml_ba_dim_1"
+  external dim : local_ ('a, 'b, 'c) t @ immutable -> int @@ portable = "%caml_ba_dim_1"
 end
 
 include Bigstring0
@@ -358,8 +358,6 @@ external internalhash_fold_bigstring
 let hash_fold_t = internalhash_fold_bigstring
 let hash t = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t t
 
-type t_frozen = t [@@deriving compare ~localize, globalize, hash, sexp, sexp_grammar]
-
 let equal__local t1 t2 =
   if phys_equal t1 t2
   then true
@@ -370,6 +368,9 @@ let equal__local t1 t2 =
 ;;
 
 let equal t1 t2 = equal__local t1 t2
+
+type t_frozen = t
+[@@deriving compare ~localize, equal ~localize, globalize, hash, sexp, sexp_grammar]
 
 (* Search *)
 
