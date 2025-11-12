@@ -56,6 +56,8 @@ let create size =
   aux_create ~size
 ;;
 
+external unsafe_globalize_shared : t @ local -> t @@ portable = "%identity"
+
 let empty = create 0
 let length = Array1.dim
 

@@ -54,6 +54,7 @@ module To_string = To_string
 
 let copy = copy
 let globalize = globalize
+let unsafe_globalize_shared = unsafe_globalize_shared
 
 let%test_unit "copy" =
   assert (phys_equal copy globalize);

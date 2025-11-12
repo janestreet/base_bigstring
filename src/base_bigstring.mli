@@ -71,6 +71,13 @@ val to_bytes : ?pos:int -> ?len:int -> t @ local -> bytes
 (** [concat ?sep list] returns the concatenation of [list] with [sep] in between each. *)
 val concat : ?sep:t -> t list -> t
 
+(** Like [globalize], but does not copy the bigstring. Returns the input unchanged, as all
+    bigstrings are allocated on the heap as custom blocks.
+
+    May be unsafe to hold on to the bigstring and access its storage if the source of the
+    local value overwrites or deletes its storage later. *)
+val unsafe_globalize_shared : t @ local -> t
+
 (** {2 Checking} *)
 
 (** [check_args ~loc ~pos ~len bstr] checks the position and length arguments [pos] and
