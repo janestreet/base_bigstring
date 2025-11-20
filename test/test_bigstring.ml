@@ -226,8 +226,8 @@ struct
       ]
       ~f:(fun first_byte ->
         let i = getter (getter_t ~first_byte) ~pos:0 in
-        (* Signed hex is not clear; make sure the hex is unsigned.  Include the signed
-             decimal form mainly to indicate the sign. *)
+        (* Signed hex is not clear; make sure the hex is unsigned. Include the signed
+           decimal form mainly to indicate the sign. *)
         printf !"0x%x (= %d)\n" i i)
   ;;
 
@@ -994,16 +994,15 @@ module%bench _ = struct
   let[@inline always] bit_manipulation_int64_to_int_exn (local_ n) =
     if arch_sixtyfour
     then
-      (*
-         For positive int64, the bits must start with: 00...
-           and for negative ones, the bits must start with: 11...
-           {v
+      (* For positive int64, the bits must start with: 00... and for negative ones, the
+         bits must start with: 11...
+         {v
                n           = 0bXY...
                m = n asr 1 = 0bXX...
                m lxor n    = 0b0(X xor Y)...
                            = 0b01... if n = 0b01... or 0b10...
                            = 0b00... if n = 0b00... or 0b11...
-             v}
+         v}
       *)
       if Poly.(Int64.((n asr 1) lxor n) < 0x4000_0000_0000_0000L)
       then int64_to_int n
@@ -1046,7 +1045,7 @@ module%bench _ = struct
     done
   ;;
 
-  (*
+  (*=
      Results:
        ┌──────────────────────────────────────────────────────────────┬────────────┬────────────┐
        │ Name                                                         │   Time/Run │ Percentage │

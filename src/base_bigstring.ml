@@ -76,8 +76,8 @@ let[@inline never] check_args_slow ~loc ~pos ~len (bstr : t) =
   if pos < 0 then invalid_arg (loc ^ ": pos < 0");
   if len < 0 then invalid_arg (loc ^ ": len < 0");
   let bstr_len = length bstr in
-  (* Be careful with overflow!  We could have bogons like [pos = Int.max_value] or [len =
-     Int.max_value] passed by the user. *)
+  (* Be careful with overflow! We could have bogons like [pos = Int.max_value] or
+     [len = Int.max_value] passed by the user. *)
   if bstr_len - pos < len
   then invalid_arg (sprintf "Bigstring.%s: length(bstr) < pos + len" loc)
 ;;
@@ -924,8 +924,7 @@ let unsafe_set_uint8 (t : t) ~pos n = Array1.unsafe_set t pos (Char.unsafe_of_in
 
 let unsafe_set_int8 (t : t) ~pos n =
   (* In all the set functions where there are these tests, it looks like the test could be
-     removed, since they are only changing the values of the bytes that are not
-     written. *)
+     removed, since they are only changing the values of the bytes that are not written. *)
   let n = if n < 0 then n + 256 else n in
   Array1.unsafe_set t pos (Char.unsafe_of_int n)
 ;;
