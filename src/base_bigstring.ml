@@ -36,6 +36,8 @@ let create size =
   aux_create ~size
 ;;
 
+external unsafe_globalize_shared : t -> t = "%identity"
+
 let empty = create 0
 let length = Array1.dim
 
@@ -53,8 +55,8 @@ let[@inline never] check_args_slow ~loc ~pos ~len (bstr : t) =
   if pos < 0 then invalid_arg (loc ^ ": pos < 0");
   if len < 0 then invalid_arg (loc ^ ": len < 0");
   let bstr_len = length bstr in
-  (* Be careful with overflow!  We could have bogons like [pos = Int.max_value] or [len =
-     Int.max_value] passed by the user. *)
+  (* Be careful with overflow! We could have bogons like [pos = Int.max_value] or
+     [len = Int.max_value] passed by the user. *)
   if bstr_len - pos < len
   then invalid_arg (sprintf "Bigstring.%s: length(bstr) < pos + len" loc)
 ;;
@@ -102,14 +104,14 @@ module Bytes_sequence = struct
   let length = Bytes.length
 end
 
-include%template Blit.Make [@modality portable] (struct
+include%template Blit.Make [@modality portable] [@mode read] (struct
     include Bigstring_sequence
 
     let unsafe_blit = unsafe_blit
   end)
 
 module%template From_bytes =
-  Blit.Make_distinct [@modality portable]
+  Blit.Make_distinct [@modality portable] [@mode read]
     (Bytes_sequence)
     (struct
       external unsafe_blit
@@ -126,7 +128,7 @@ module%template From_bytes =
     end)
 
 module%template To_bytes =
-  Blit.Make_distinct [@modality portable]
+  Blit.Make_distinct [@modality portable] [@mode read]
     (Bigstring_sequence)
     (struct
       external unsafe_blit
@@ -166,7 +168,8 @@ module%template From_string =
 module To_string = struct
   include To_bytes
 
-  include%template Blit.Make_to_string [@modality portable] (Bigstring0) (To_bytes)
+  include%template
+    Blit.Make_to_string [@modality portable] [@mode read] (Bigstring0) (To_bytes)
 end
 
 let of_string = From_string.subo
@@ -201,21 +204,29 @@ let concat =
     | [] -> create 0
     | head :: tail ->
       let head_len = length head in
-      let sep_len = Option.value_map sep ~f:(fun t -> length t) ~default:0 in
-      let tail_count = List.length tail in
-      let len =
-        head_len
-        + (sep_len * tail_count)
-        + List.sum (module Int) tail ~f:(fun t -> length t)
+      let sep_len =
+        match sep with
+        | Some t -> length t
+        | None -> 0
       in
+      let[@inline] rec length_loop ~count ~sum = function
+        | [] -> head_len + (sep_len * count) + sum
+        | x :: xs -> length_loop ~count:(count + 1) ~sum:(sum + length x) xs
+      in
+      let len = length_loop ~count:0 ~sum:0 tail in
       let dst = create len in
       let dst_pos_ref = ref 0 in
       append ~src:head ~dst ~dst_pos_ref;
-      List.iter tail ~f:(fun src ->
-        (match sep with
-         | None -> ()
-         | Some sep -> append ~src:sep ~dst ~dst_pos_ref);
-        append ~src ~dst ~dst_pos_ref);
+      let[@inline] rec append_loop = function
+        | [] -> ()
+        | src :: l ->
+          (match sep with
+           | None -> ()
+           | Some sep -> append ~src:sep ~dst ~dst_pos_ref);
+          append ~src ~dst ~dst_pos_ref;
+          append_loop l
+      in
+      append_loop tail;
       assert (!dst_pos_ref = len);
       dst
 ;;
@@ -834,8 +845,7 @@ let unsafe_set_uint8 (t : t) ~pos n = Array1.unsafe_set t pos (Char.unsafe_of_in
 
 let unsafe_set_int8 (t : t) ~pos n =
   (* In all the set functions where there are these tests, it looks like the test could be
-     removed, since they are only changing the values of the bytes that are not
-     written. *)
+     removed, since they are only changing the values of the bytes that are not written. *)
   let n = if n < 0 then n + 256 else n in
   Array1.unsafe_set t pos (Char.unsafe_of_int n)
 ;;
@@ -922,7 +932,7 @@ module%template Int_repr = struct
     end
   end
 
-  include Int_repr.Make_get [@modality portable] (F)
+  include Int_repr.Make_get [@modality portable] [@mode read] (F)
   include Int_repr.Make_set [@modality portable] (F)
 
   module Unsafe = struct
@@ -943,7 +953,7 @@ module%template Int_repr = struct
       end
     end
 
-    include Int_repr.Make_get [@modality portable] (F)
+    include Int_repr.Make_get [@modality portable] [@mode read] (F)
     include Int_repr.Make_set [@modality portable] (F)
   end
 end

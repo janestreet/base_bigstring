@@ -7,7 +7,9 @@ open Stdlib.Bigarray
 
 (** Type of bigstrings *)
 type t = (char, int8_unsigned_elt, c_layout) Array1.t
-[@@deriving compare ~localize, equal ~localize, globalize, sexp, sexp_grammar]
+[@@deriving compare ~localize, equal ~localize, sexp, sexp_grammar]
+
+val globalize : t -> t
 
 (** Type of bigstrings which support hashing. Note that mutation invalidates previous
     hashes. *)
@@ -69,6 +71,13 @@ val to_bytes : ?pos:int -> ?len:int -> t -> bytes
 (** [concat ?sep list] returns the concatenation of [list] with [sep] in between each. *)
 val concat : ?sep:t -> t list -> t
 
+(** Like [globalize], but does not copy the bigstring. Returns the input unchanged, as all
+    bigstrings are allocated on the heap as custom blocks.
+
+    May be unsafe to hold on to the bigstring and access its storage if the source of the
+    local value overwrites or deletes its storage later. *)
+val unsafe_globalize_shared : t -> t
+
 (** {2 Checking} *)
 
 (** [check_args ~loc ~pos ~len bstr] checks the position and length arguments [pos] and
@@ -115,7 +124,7 @@ external is_mmapped : (t[@local_opt]) -> bool = "bigstring_is_mmapped_stub"
 
     @raise Invalid_argument if the designated ranges are out of bounds. *)
 
-include Blit.S with type t := t
+include Blit.S [@mode read] with type t := t
 
 val copy : t -> t
 
@@ -129,12 +138,12 @@ module To_string : sig
   val unsafe_blit : (t, bytes) Blit.blit
   [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.unsafe_blit] instead"]
 
-  include Blit.S_to_string with type t := t
+  include Blit.S_to_string [@mode read] with type t := t
 end
 
 module From_string : Blit.S_distinct with type src := string with type dst := t
-module To_bytes : Blit.S_distinct with type src := t with type dst := bytes
-module From_bytes : Blit.S_distinct with type src := bytes with type dst := t
+module To_bytes : Blit.S_distinct [@mode read] with type src := t with type dst := bytes
+module From_bytes : Blit.S_distinct [@mode read] with type src := bytes with type dst := t
 
 (** [memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)]. *)
 val memset : t -> pos:int -> len:int -> char -> unit
@@ -378,18 +387,18 @@ module Local : sig
 end
 
 module Int_repr : sig
-  include Int_repr.Get with type t := t
+  include Int_repr.Get [@mode read] with type t := t
   include Int_repr.Set with type t := t
 
   module Unsafe : sig
-    include Int_repr.Get with type t := t
+    include Int_repr.Get [@mode read] with type t := t
     include Int_repr.Set with type t := t
   end
 end
 
 (*_ See the Jane Street Style Guide for an explanation of [Private] submodules:
 
-  https://opensource.janestreet.com/standards/#private-submodules *)
+    https://opensource.janestreet.com/standards/#private-submodules *)
 module Private : sig
   val sign_extend_16 : int -> int
 end
