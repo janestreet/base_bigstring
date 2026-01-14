@@ -12,30 +12,36 @@ module Array1 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Stdlib.Bigarray.Array1.t
 
   external get
-    :  local_ ('a, 'b, 'c) t @ shared
+    :  ('a, 'b, 'c) t @ local read
     -> int
     -> 'a @ shared
     @@ portable
     = "%caml_ba_ref_1"
 
-  external set : local_ ('a, 'b, 'c) t -> int -> 'a -> unit @@ portable = "%caml_ba_set_1"
+  external set
+    :  ('a, 'b, 'c) t @ local
+    -> int
+    -> 'a
+    -> unit
+    @@ portable
+    = "%caml_ba_set_1"
 
   external unsafe_get
-    :  local_ ('a, 'b, 'c) t @ shared
+    :  ('a, 'b, 'c) t @ local read
     -> int
     -> 'a @ shared
     @@ portable
     = "%caml_ba_unsafe_ref_1"
 
   external unsafe_set
-    :  local_ ('a, 'b, 'c) t
+    :  ('a, 'b, 'c) t @ local
     -> int
     -> 'a
     -> unit
     @@ portable
     = "%caml_ba_unsafe_set_1"
 
-  external dim : local_ ('a, 'b, 'c) t @ immutable -> int @@ portable = "%caml_ba_dim_1"
+  external dim : ('a, 'b, 'c) t @ immutable local -> int @@ portable = "%caml_ba_dim_1"
 end
 
 include Bigstring0
@@ -61,7 +67,11 @@ external unsafe_globalize_shared : t @ local -> t @@ portable = "%identity"
 let empty = create 0
 let length = Array1.dim
 
-external is_mmapped : (t[@local_opt]) -> bool @@ portable = "bigstring_is_mmapped_stub"
+external is_mmapped
+  :  (t[@local_opt]) @ immutable
+  -> bool
+  @@ portable
+  = "bigstring_is_mmapped_stub"
 [@@noalloc]
 
 let init n ~f =
@@ -96,7 +106,7 @@ let get_opt_len bstr ~pos = function
 (* Blitting *)
 
 external unsafe_blit
-  :  src:(t[@local_opt])
+  :  src:(t[@local_opt]) @ read
   -> src_pos:int
   -> dst:(t[@local_opt])
   -> dst_pos:int
@@ -107,10 +117,10 @@ external unsafe_blit
 [@@noalloc]
 
 (* Exposing the external version of get/set supports better inlining. *)
-external get : (t[@local_opt]) @ shared -> int -> char @@ portable = "%caml_ba_ref_1"
+external get : (t[@local_opt]) @ read -> int -> char @@ portable = "%caml_ba_ref_1"
 
 external unsafe_get
-  :  (t[@local_opt]) @ shared
+  :  (t[@local_opt]) @ read
   -> int
   -> char
   @@ portable
@@ -140,18 +150,18 @@ module Bytes_sequence = struct
   let length = Bytes.length
 end
 
-include%template Blit.Make [@modality portable] (struct
+include%template Blit.Make [@modality portable] [@mode read] (struct
     include Bigstring_sequence
 
     let unsafe_blit = unsafe_blit
   end)
 
 module%template From_bytes =
-  Blit.Make_distinct [@modality portable]
+  Blit.Make_distinct [@modality portable] [@mode read]
     (Bytes_sequence)
     (struct
       external unsafe_blit
-        :  src:(bytes[@local_opt])
+        :  src:(bytes[@local_opt]) @ read
         -> src_pos:int
         -> dst:(t[@local_opt])
         -> dst_pos:int
@@ -165,11 +175,11 @@ module%template From_bytes =
     end)
 
 module%template To_bytes =
-  Blit.Make_distinct [@modality portable]
+  Blit.Make_distinct [@modality portable] [@mode read]
     (Bigstring_sequence)
     (struct
       external unsafe_blit
-        :  src:(t[@local_opt])
+        :  src:(t[@local_opt]) @ read
         -> src_pos:int
         -> dst:(bytes[@local_opt])
         -> dst_pos:int
@@ -207,7 +217,8 @@ module%template From_string =
 module To_string = struct
   include To_bytes
 
-  include%template Blit.Make_to_string [@modality portable] (Bigstring0) (To_bytes)
+  include%template
+    Blit.Make_to_string [@modality portable] [@mode read] (Bigstring0) (To_bytes)
 end
 
 let of_string = From_string.subo
@@ -237,26 +248,34 @@ let concat =
     blit ~dst ~dst_pos ~src ~src_pos ~len;
     dst_pos_ref := dst_pos + len
   in
-  fun ?sep list ->
+  fun ?sep (list @ read) ->
     match list with
     | [] -> create 0
     | head :: tail ->
       let head_len = length head in
-      let sep_len = Option.value_map sep ~f:(fun t -> length t) ~default:0 in
-      let tail_count = List.length tail in
-      let len =
-        head_len
-        + (sep_len * tail_count)
-        + List.sum (module Int) tail ~f:(fun t -> length t)
+      let sep_len =
+        match sep with
+        | Some t -> length t
+        | None -> 0
       in
+      let[@inline] rec length_loop ~count ~sum = function
+        | [] -> head_len + (sep_len * count) + sum
+        | x :: xs -> length_loop ~count:(count + 1) ~sum:(sum + length x) xs
+      in
+      let len = length_loop ~count:0 ~sum:0 tail in
       let dst = create len in
       let dst_pos_ref = ref 0 in
       append ~src:head ~dst ~dst_pos_ref;
-      List.iter tail ~f:(fun src ->
-        (match sep with
-         | None -> ()
-         | Some sep -> append ~src:sep ~dst ~dst_pos_ref);
-        append ~src ~dst ~dst_pos_ref);
+      let[@inline] rec append_loop = function
+        | [] -> ()
+        | src :: l ->
+          (match sep with
+           | None -> ()
+           | Some sep -> append ~src:sep ~dst ~dst_pos_ref);
+          append ~src ~dst ~dst_pos_ref;
+          append_loop l
+      in
+      append_loop tail;
       assert (!dst_pos_ref = len);
       dst
 ;;
@@ -279,9 +298,9 @@ let memset t ~pos ~len c =
 (* Comparison *)
 
 external unsafe_memcmp
-  :  (t[@local_opt])
+  :  (t[@local_opt]) @ read
   -> pos1:int
-  -> (t[@local_opt])
+  -> (t[@local_opt]) @ read
   -> pos2:int
   -> len:int
   -> int
@@ -289,16 +308,16 @@ external unsafe_memcmp
   = "bigstring_memcmp_stub"
 [@@noalloc]
 
-let memcmp (local_ t1) ~pos1 (local_ t2) ~pos2 ~len =
+let memcmp (t1 @ local) ~pos1 (t2 @ local) ~pos2 ~len =
   Ordered_collection_common.check_pos_len_exn ~pos:pos1 ~len ~total_length:(length t1);
   Ordered_collection_common.check_pos_len_exn ~pos:pos2 ~len ~total_length:(length t2);
   unsafe_memcmp t1 ~pos1 t2 ~pos2 ~len
 ;;
 
 external unsafe_memcmp_bytes
-  :  (t[@local_opt])
+  :  (t[@local_opt]) @ read
   -> pos1:int
-  -> (Bytes.t[@local_opt])
+  -> (Bytes.t[@local_opt]) @ read
   -> pos2:int
   -> len:int
   -> int
@@ -325,9 +344,9 @@ let memcmp_string (local_ t) ~pos1 (local_ str) ~pos2 ~len =
 ;;
 
 external unsafe_strncmp
-  :  (t[@local_opt])
+  :  (t[@local_opt]) @ read
   -> pos1:int
-  -> (t[@local_opt])
+  -> (t[@local_opt]) @ read
   -> pos2:int
   -> len:int
   -> int
@@ -377,7 +396,7 @@ type t_frozen = t
 (* Search *)
 
 external unsafe_find
-  :  (t[@local_opt])
+  :  (t[@local_opt]) @ read
   -> char
   -> pos:int
   -> len:int
@@ -387,7 +406,7 @@ external unsafe_find
 [@@noalloc]
 
 external unsafe_rfind
-  :  (t[@local_opt])
+  :  (t[@local_opt]) @ read
   -> char
   -> pos:int
   -> len:int
@@ -397,8 +416,8 @@ external unsafe_rfind
 [@@noalloc]
 
 external unsafe_memmem
-  :  haystack:(t[@local_opt])
-  -> needle:(t[@local_opt])
+  :  haystack:(t[@local_opt]) @ read
+  -> needle:(t[@local_opt]) @ read
   -> haystack_pos:int
   -> haystack_len:int
   -> needle_pos:int
@@ -452,21 +471,21 @@ external swap32 : local_ int32 -> int32 @@ portable = "%bswap_int32"
 external swap64 : local_ int64 -> int64 @@ portable = "%bswap_int64"
 
 external unsafe_get_16
-  :  t @ local shared
+  :  t @ local read
   -> int
   -> int
   @@ portable
   = "%caml_bigstring_get16u"
 
 external unsafe_get_32
-  :  t @ local shared
+  :  t @ local read
   -> int
   -> int32
   @@ portable
   = "%caml_bigstring_get32u"
 
 external unsafe_get_64
-  :  t @ local shared
+  :  t @ local read
   -> int
   -> (int64[@local_opt])
   @@ portable
@@ -1011,7 +1030,7 @@ module%template Int_repr = struct
     end
   end
 
-  include Int_repr.Make_get [@modality portable] (F)
+  include Int_repr.Make_get [@modality portable] [@mode read] (F)
   include Int_repr.Make_set [@modality portable] (F)
 
   module Unsafe = struct
@@ -1032,7 +1051,7 @@ module%template Int_repr = struct
       end
     end
 
-    include Int_repr.Make_get [@modality portable] (F)
+    include Int_repr.Make_get [@modality portable] [@mode read] (F)
     include Int_repr.Make_set [@modality portable] (F)
   end
 end
