@@ -7,7 +7,7 @@ open Stdlib.Bigarray
 
 (** Type of bigstrings *)
 type t = (char, int8_unsigned_elt, c_layout) Array1.t
-[@@deriving compare ~localize, equal ~localize, sexp, sexp_grammar]
+[@@deriving compare ~localize, equal ~localize, sexp ~stackify, sexp_grammar]
 
 val globalize : t -> t
 
@@ -55,7 +55,8 @@ val of_bytes : ?pos:int -> ?len:int -> bytes -> t
     @param len default = [length bstr - pos]
 
     @raise Invalid_argument if the string would exceed runtime limits. *)
-val to_string : ?pos:int -> ?len:int -> t -> string
+val%template to_string : ?pos:int -> ?len:int -> t -> string
+[@@alloc a @ m = (heap_global, stack_local)]
 
 (** [to_bytes ?pos ?len bstr]
     @return
