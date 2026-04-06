@@ -80,8 +80,8 @@ let%expect_test "basic unsafe_blits" =
 ;;
 
 let to_bytes = to_bytes
-let to_string = to_string
-let sexp_of_t = sexp_of_t
+let%template[@alloc a = (heap, stack)] to_string = (to_string [@alloc a])
+let%template[@alloc a = (heap, stack)] sexp_of_t = (sexp_of_t [@alloc a])
 let of_string = of_string
 let of_bytes = of_bytes
 let t_of_sexp = t_of_sexp

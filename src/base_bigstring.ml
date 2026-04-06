@@ -224,8 +224,25 @@ end
 let of_string = From_string.subo
 let of_bytes = From_bytes.subo
 let to_string = To_string.subo
+
+let to_string__stack ?pos ?len t = exclave_
+  let src_pos =
+    match pos with
+    | None -> 0
+    | Some pos -> pos
+  in
+  let len = get_opt_len t ~pos:src_pos len in
+  check_args ~loc:"to_string__stack" ~pos:src_pos ~len t;
+  let bytes = Bytes.create_local len in
+  To_bytes.unsafe_blit ~src:t ~dst:bytes ~len ~src_pos ~dst_pos:0;
+  Bytes.unsafe_to_string ~no_mutation_while_string_reachable:bytes
+;;
+
 let to_bytes = To_bytes.subo
-let sexp_of_t t = Sexp.Atom (to_string t)
+
+let%template[@alloc a = (heap, stack)] sexp_of_t t =
+  Sexp.Atom ((to_string [@alloc a]) t) [@exclave_if_stack a]
+;;
 
 let t_of_sexp : Sexp.t -> t = function
   | Atom str -> of_string str
