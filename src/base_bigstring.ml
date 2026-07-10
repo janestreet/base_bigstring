@@ -46,7 +46,7 @@ end
 
 include Bigstring0
 
-external aux_create : size:int -> t @@ portable = "bigstring_alloc_v2"
+external aux_create : size:int -> t @ unique @@ portable = "bigstring_alloc_v2"
 
 let sprintf = Printf.sprintf
 
@@ -63,6 +63,12 @@ let create size =
 ;;
 
 external unsafe_globalize_shared : t @ local -> t @@ portable = "%identity"
+
+external unique_implies_uncontended
+  :  t @ contended unique
+  -> t @ unique
+  @@ portable
+  = "%identity"
 
 let empty = create 0
 let length = Array1.dim

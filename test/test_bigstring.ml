@@ -56,6 +56,12 @@ let copy = copy
 let globalize = globalize
 let unsafe_globalize_shared = unsafe_globalize_shared
 
+external unique_implies_uncontended
+  :  t @ contended unique
+  -> t @ unique
+  @@ portable
+  = "%identity"
+
 let%expect_test "copy" =
   assert (phys_equal copy globalize);
   let equal a b = String.equal (to_string a) (to_string b) in

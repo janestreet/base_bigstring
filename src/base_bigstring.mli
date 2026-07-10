@@ -22,7 +22,7 @@ type t_frozen = t
 
 (** [create length]
     @return a new bigstring having [length]. Content is undefined. *)
-val create : int -> t
+val create : int -> t @ unique
 
 (** [empty] is a bigstring of length 0 *)
 val empty : t
@@ -80,6 +80,15 @@ val concat : ?sep:t @ local read -> t list @ local read -> t
     May be unsafe to hold on to the bigstring and access its storage if the source of the
     local value overwrites or deletes its storage later. *)
 val unsafe_globalize_shared : t @ local -> t
+
+(** Witness that a uniquely owned bigstring cannot be contended.
+
+    Note that this can be unsound if combined with certain [unsafe_*] functions. In
+    particular, [unsafe_globalize_shared] and [Core.Bigstring.unsafe_sub_shared_of_local]
+    both make it possible to hide a reference to the same underlying bytes from the
+    compiler while still leaving [t] unique from the compiler's perspective. Use of those
+    functions should be considered equivalent to a sneaky [Obj.magic_unique]. *)
+external unique_implies_uncontended : t @ contended unique -> t @ unique = "%identity"
 
 (** {2 Checking} *)
 
