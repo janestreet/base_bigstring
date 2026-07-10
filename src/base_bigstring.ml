@@ -37,6 +37,7 @@ let create size =
 ;;
 
 external unsafe_globalize_shared : t -> t = "%identity"
+external unique_implies_uncontended : t -> t = "%identity"
 
 let empty = create 0
 let length = Array1.dim

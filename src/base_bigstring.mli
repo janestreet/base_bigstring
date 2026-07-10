@@ -79,6 +79,15 @@ val concat : ?sep:t -> t list -> t
     local value overwrites or deletes its storage later. *)
 val unsafe_globalize_shared : t -> t
 
+(** Witness that a uniquely owned bigstring cannot be contended.
+
+    Note that this can be unsound if combined with certain [unsafe_*] functions. In
+    particular, [unsafe_globalize_shared] and [Core.Bigstring.unsafe_sub_shared_of_local]
+    both make it possible to hide a reference to the same underlying bytes from the
+    compiler while still leaving [t] unique from the compiler's perspective. Use of those
+    functions should be considered equivalent to a sneaky [Obj.magic_unique]. *)
+external unique_implies_uncontended : t -> t = "%identity"
+
 (** {2 Checking} *)
 
 (** [check_args ~loc ~pos ~len bstr] checks the position and length arguments [pos] and
