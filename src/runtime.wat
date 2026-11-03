@@ -1,4 +1,9 @@
 (module
+   (@if $portable-int
+   (@then
+      (import "env" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+   ))
    (import "env" "caml_ba_create"
       (func $caml_ba_create
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -52,7 +57,31 @@
       (func $caml_copy_int32 (param $i i32) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
+
+   (@if $portable-int
+   (@then
+      ;; Mirrors native [Long_val] truncated to a uint32.
+      (import "env" "portable_int_val_32"
+         (func $state_val (param (ref eq)) (result i32)))
+
+      ;; In portable-int mode, [Sys.word_size] is 64, so the internal hash
+      ;; state is a plain OCaml int holding a uint32 (mirroring the native
+      ;; stubs); since a uint32 does not fit in an i31, it may be a boxed
+      ;; large int.
+      (type $ocaml_large_int (struct (field i64)))
+
+      (func $val_state (param $h i32) (result (ref eq))
+         ;; Mirrors native [Val_long] of a uint32: always non-negative.
+         (if (result (ref eq))
+             (i32.lt_u (local.get $h) (i32.const 0x40000000))
+            (then (ref.i31 (local.get $h)))
+            (else
+               (struct.new $ocaml_large_int
+                  (i64.extend_i32_u (local.get $h))))))
+   ))
+
+   (@string $bb_range "Base_bigstring.memmem: index out of range")
 
    (func (export "bigstring_alloc_v2")
       (param $size (ref eq)) (result (ref eq))
@@ -83,12 +112,23 @@
 
    (export "bigstring_strncmp" (func $bigstring_strncmp))
 
-   (func (export "internalhash_fold_bigstring")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (return_call $caml_copy_int32
-         (call $caml_hash_mix_bigstring
-            (call $Int32_val (local.get 0))
-            (local.get 1))))
+   (@if $portable-int
+   (@then
+      (func (export "internalhash_fold_bigstring")
+         (param (ref eq)) (param (ref eq)) (result (ref eq))
+         (return_call $val_state
+            (call $caml_hash_mix_bigstring
+               (call $state_val (local.get 0))
+               (local.get 1))))
+   )
+   (@else
+      (func (export "internalhash_fold_bigstring")
+         (param (ref eq)) (param (ref eq)) (result (ref eq))
+         (return_call $caml_copy_int32
+            (call $caml_hash_mix_bigstring
+               (call $Int32_val (local.get 0))
+               (local.get 1))))
+   ))
 
    (export "bigstring_find" (func $bigstring_find))
 
@@ -103,13 +143,37 @@
       (local $needle_pos i32) (local $needle_len i32)
       (local $i i32) (local $j i32) (local $lim i32)
       (local.set $haystack_pos
-         (i31.get_s (ref.cast (ref i31) (local.get $v_haystack_pos))))
+         (@if $portable-int
+         (@then
+            (call $int_val_32_exn (local.get $v_haystack_pos)
+               (global.get $bb_range)))
+         (@else
+            (i31.get_s (ref.cast (ref i31) (local.get $v_haystack_pos))))
+         ))
       (local.set $haystack_len
-         (i31.get_s (ref.cast (ref i31) (local.get $v_haystack_len))))
+         (@if $portable-int
+         (@then
+            (call $int_val_32_exn (local.get $v_haystack_len)
+               (global.get $bb_range)))
+         (@else
+            (i31.get_s (ref.cast (ref i31) (local.get $v_haystack_len))))
+         ))
       (local.set $needle_pos
-         (i31.get_s (ref.cast (ref i31) (local.get $v_needle_pos))))
+         (@if $portable-int
+         (@then
+            (call $int_val_32_exn (local.get $v_needle_pos)
+               (global.get $bb_range)))
+         (@else
+            (i31.get_s (ref.cast (ref i31) (local.get $v_needle_pos))))
+         ))
       (local.set $needle_len
-         (i31.get_s (ref.cast (ref i31) (local.get $v_needle_len))))
+         (@if $portable-int
+         (@then
+            (call $int_val_32_exn (local.get $v_needle_len)
+               (global.get $bb_range)))
+         (@else
+            (i31.get_s (ref.cast (ref i31) (local.get $v_needle_len))))
+         ))
       (local.set $lim
          (i32.sub (local.get $haystack_len) (local.get $needle_len)))
       (loop $outer

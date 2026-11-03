@@ -9,14 +9,15 @@ open Stdlib.Bigarray
 
 (** Type of bigstrings *)
 type t = (char, int8_unsigned_elt, c_layout) Array1.t
-[@@deriving compare ~localize, equal ~localize, sexp ~stackify, sexp_grammar]
+[@@deriving compare ~localize, equal ~localize, sexp ~localize ~stackify, sexp_grammar]
 
 val globalize : t @ local read -> t
 
 (** Type of bigstrings which support hashing. Note that mutation invalidates previous
     hashes. *)
 type t_frozen = t
-[@@deriving compare ~localize, equal ~localize, globalize, hash, sexp, sexp_grammar]
+[@@deriving
+  compare ~localize, equal ~localize, globalize, hash, sexp ~localize, sexp_grammar]
 
 (** {2 Creation and string conversion} *)
 

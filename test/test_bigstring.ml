@@ -181,7 +181,8 @@ module Local = struct
 end
 
 module%test
-  [@name "truncating setters (should end in [_trunc] or begin with [unsafe_])"] _ =
+  [@name "truncating setters (should end in [_trunc] or begin with [unsafe_])"]
+  _ =
 struct
   let test setters z =
     try_setters z setters
@@ -227,7 +228,8 @@ let unsafe_get_int64_le_trunc = unsafe_get_int64_le_trunc
 let unsafe_get_int64_be_trunc = unsafe_get_int64_be_trunc
 
 module%test
-  [@name "truncating getters (should end in [_trunc] or begin with [unsafe_])"] _ =
+  [@name "truncating getters (should end in [_trunc] or begin with [unsafe_])"]
+  _ =
 struct
   let test getter =
     List.iter
@@ -268,7 +270,7 @@ struct
       |}]
   ;;
 
-  let%expect_test ("31-bit int" [@tags "wasm-only"]) =
+  let%expect_test ("31-bit int" [@tags "wasm-only", "32-bits-only"]) =
     test get_int64_le_trunc;
     [%expect
       {|
@@ -798,7 +800,7 @@ end
 
 let memset = memset
 
-external set : local_ t_frozen -> int -> char -> unit @@ portable = "%caml_ba_set_1"
+external set : t_frozen @ local -> int -> char -> unit @@ portable = "%caml_ba_set_1"
 
 let%expect_test "basic char setters" =
   try_setters
@@ -815,7 +817,7 @@ let%expect_test "basic char setters" =
 let unsafe_memset = unsafe_memset
 
 external unsafe_set
-  :  local_ t_frozen
+  :  t_frozen @ local
   -> int
   -> char
   -> unit
@@ -976,7 +978,7 @@ module%bench _ = struct
   *)
   let arch_sixtyfour = Stdlib.Sys.word_size = 64
 
-  external int64_to_int : local_ int64 -> int = "%int64_to_int"
+  external int64_to_int : int64 @ local -> int = "%int64_to_int"
 
   let int64_conv_error () =
     failwith "unsafe_read_int64: value cannot be represented unboxed!"
@@ -1065,7 +1067,8 @@ end
 type nonrec t = t
 
 type nonrec t_frozen = t_frozen
-[@@deriving compare ~localize, equal ~localize, globalize, hash, sexp, sexp_grammar]
+[@@deriving
+  compare ~localize, equal ~localize, globalize, hash, sexp ~localize, sexp_grammar]
 
 (* Effectively tested in lib/int_repr *)
 module Int_repr = Base_bigstring.Int_repr

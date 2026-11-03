@@ -3,4 +3,4 @@
  (libraries base_bigstring core.base_for_tests core expect_test_helpers_core
    stdio)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane -compare-require-explicit-locality)))

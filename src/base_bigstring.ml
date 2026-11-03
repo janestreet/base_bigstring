@@ -377,7 +377,7 @@ external unsafe_strncmp
   = "bigstring_strncmp"
 [@@noalloc]
 
-let compare__local t1 t2 =
+let compare_internal t1 t2 =
   if phys_equal t1 t2
   then 0
   else (
@@ -389,7 +389,7 @@ let compare__local t1 t2 =
     | n -> n)
 ;;
 
-let compare t1 t2 = compare__local t1 t2
+let%template[@mode __ = (local, global)] compare t1 t2 = compare_internal t1 t2
 
 external internalhash_fold_bigstring
   :  Hash.state
@@ -402,7 +402,7 @@ external internalhash_fold_bigstring
 let hash_fold_t = internalhash_fold_bigstring
 let hash t = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t t
 
-let equal__local t1 t2 =
+let equal_internal t1 t2 =
   if phys_equal t1 t2
   then true
   else (
@@ -411,10 +411,11 @@ let equal__local t1 t2 =
     Int.equal len1 len2 && Int.equal (unsafe_memcmp t1 ~pos1:0 t2 ~pos2:0 ~len:len1) 0)
 ;;
 
-let equal t1 t2 = equal__local t1 t2
+let%template[@mode __ = (local, global)] equal t1 t2 = equal_internal t1 t2
 
 type t_frozen = t
-[@@deriving compare ~localize, equal ~localize, globalize, hash, sexp, sexp_grammar]
+[@@deriving
+  compare ~localize, equal ~localize, globalize, hash, sexp ~localize, sexp_grammar]
 
 (* Search *)
 
@@ -486,12 +487,12 @@ let memmem
 (* Binary-packing like accessors *)
 
 external int32_of_int : int -> int32 @@ portable = "%int32_of_int"
-external int32_to_int : local_ int32 -> int @@ portable = "%int32_to_int"
+external int32_to_int : int32 @ local -> int @@ portable = "%int32_to_int"
 external int64_of_int : int -> int64 @@ portable = "%int64_of_int"
-external int64_to_int : local_ int64 -> int @@ portable = "%int64_to_int"
+external int64_to_int : int64 @ local -> int @@ portable = "%int64_to_int"
 external swap16 : int -> int @@ portable = "%bswap16"
-external swap32 : local_ int32 -> int32 @@ portable = "%bswap_int32"
-external swap64 : local_ int64 -> int64 @@ portable = "%bswap_int64"
+external swap32 : int32 @ local -> int32 @@ portable = "%bswap_int32"
+external swap64 : int64 @ local -> int64 @@ portable = "%bswap_int64"
 
 external unsafe_get_16
   :  t @ local read
@@ -515,7 +516,7 @@ external unsafe_get_64
   = "%caml_bigstring_get64u"
 
 external unsafe_set_16
-  :  local_ t
+  :  t @ local
   -> int
   -> int
   -> unit
@@ -523,17 +524,17 @@ external unsafe_set_16
   = "%caml_bigstring_set16u"
 
 external unsafe_set_32
-  :  local_ t
+  :  t @ local
   -> int
-  -> local_ int32
+  -> int32 @ local
   -> unit
   @@ portable
   = "%caml_bigstring_set32u"
 
 external unsafe_set_64
-  :  local_ t
+  :  t @ local
   -> int
-  -> local_ int64
+  -> int64 @ local
   -> unit
   @@ portable
   = "%caml_bigstring_set64u"
