@@ -30,7 +30,7 @@ module Blit_elt = struct
 end
 
 module Blit_s : sig
-    include Blit.S [@mode read]
+    include Blit.S
   end
   with type t := t =
   Base_bigstring
@@ -82,8 +82,8 @@ let%expect_test "basic unsafe_blits" =
 ;;
 
 let to_bytes = to_bytes
-let%template[@alloc a = (heap, stack)] to_string = (to_string [@alloc a])
-let%template[@alloc a = (heap, stack)] sexp_of_t = (sexp_of_t [@alloc a])
+let to_string = to_string
+let sexp_of_t = sexp_of_t
 let of_string = of_string
 let of_bytes = of_bytes
 let t_of_sexp = t_of_sexp
@@ -172,7 +172,8 @@ module Local = struct
 end
 
 module%test
-  [@name "truncating setters (should end in [_trunc] or begin with [unsafe_])"] _ =
+  [@name "truncating setters (should end in [_trunc] or begin with [unsafe_])"]
+  _ =
 struct
   let test setters z =
     try_setters z setters
@@ -218,7 +219,8 @@ let unsafe_get_int64_le_trunc = unsafe_get_int64_le_trunc
 let unsafe_get_int64_be_trunc = unsafe_get_int64_be_trunc
 
 module%test
-  [@name "truncating getters (should end in [_trunc] or begin with [unsafe_])"] _ =
+  [@name "truncating getters (should end in [_trunc] or begin with [unsafe_])"]
+  _ =
 struct
   let test getter =
     List.iter
@@ -259,7 +261,7 @@ struct
       |}]
   ;;
 
-  let%expect_test ("31-bit int" [@tags "wasm-only"]) =
+  let%expect_test ("31-bit int" [@tags "wasm-only", "32-bits-only"]) =
     test get_int64_le_trunc;
     [%expect
       {|
@@ -872,9 +874,7 @@ let%expect_test "basic concat" =
 ;;
 
 let equal = equal
-let equal__local = equal__local
 let compare = compare
-let compare__local = compare__local
 
 let%expect_test "basic equal" =
   let strings = [ ""; "a"; "aa"; "ab"; "b"; "ba"; "bb" ] in
@@ -1040,7 +1040,7 @@ end
 type nonrec t = t
 
 type nonrec t_frozen = t_frozen
-[@@deriving compare ~localize, equal ~localize, globalize, hash, sexp, sexp_grammar]
+[@@deriving compare, equal, globalize, hash, sexp, sexp_grammar]
 
 (* Effectively tested in lib/int_repr *)
 module Int_repr = Base_bigstring.Int_repr

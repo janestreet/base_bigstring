@@ -1,4 +1,5 @@
 (module
+    
    (import "env" "caml_ba_create"
       (func $caml_ba_create
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -52,7 +53,11 @@
       (func $caml_copy_int32 (param $i i32) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
+
+    
+
+   (@string $bb_range "Base_bigstring.memmem: index out of range")
 
    (func (export "bigstring_alloc_v2")
       (param $size (ref eq)) (result (ref eq))
@@ -83,12 +88,14 @@
 
    (export "bigstring_strncmp" (func $bigstring_strncmp))
 
-   (func (export "internalhash_fold_bigstring")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (return_call $caml_copy_int32
-         (call $caml_hash_mix_bigstring
-            (call $Int32_val (local.get 0))
-            (local.get 1))))
+    
+      (func (export "internalhash_fold_bigstring")
+         (param (ref eq)) (param (ref eq)) (result (ref eq))
+         (return_call $caml_copy_int32
+            (call $caml_hash_mix_bigstring
+               (call $Int32_val (local.get 0))
+               (local.get 1))))
+    
 
    (export "bigstring_find" (func $bigstring_find))
 
@@ -103,13 +110,17 @@
       (local $needle_pos i32) (local $needle_len i32)
       (local $i i32) (local $j i32) (local $lim i32)
       (local.set $haystack_pos
-         (i31.get_s (ref.cast (ref i31) (local.get $v_haystack_pos))))
+          
+            (i31.get_s (ref.cast (ref i31) (local.get $v_haystack_pos))) )
       (local.set $haystack_len
-         (i31.get_s (ref.cast (ref i31) (local.get $v_haystack_len))))
+          
+            (i31.get_s (ref.cast (ref i31) (local.get $v_haystack_len))) )
       (local.set $needle_pos
-         (i31.get_s (ref.cast (ref i31) (local.get $v_needle_pos))))
+          
+            (i31.get_s (ref.cast (ref i31) (local.get $v_needle_pos))) )
       (local.set $needle_len
-         (i31.get_s (ref.cast (ref i31) (local.get $v_needle_len))))
+          
+            (i31.get_s (ref.cast (ref i31) (local.get $v_needle_len))) )
       (local.set $lim
          (i32.sub (local.get $haystack_len) (local.get $needle_len)))
       (loop $outer

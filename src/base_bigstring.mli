@@ -7,14 +7,13 @@ open Stdlib.Bigarray
 
 (** Type of bigstrings *)
 type t = (char, int8_unsigned_elt, c_layout) Array1.t
-[@@deriving compare ~localize, equal ~localize, sexp ~stackify, sexp_grammar]
+[@@deriving compare, equal, sexp, sexp_grammar]
 
 val globalize : t -> t
 
 (** Type of bigstrings which support hashing. Note that mutation invalidates previous
     hashes. *)
-type t_frozen = t
-[@@deriving compare ~localize, equal ~localize, globalize, hash, sexp, sexp_grammar]
+type t_frozen = t [@@deriving compare, equal, globalize, hash, sexp, sexp_grammar]
 
 (** {2 Creation and string conversion} *)
 
@@ -55,8 +54,7 @@ val of_bytes : ?pos:int -> ?len:int -> bytes -> t
     @param len default = [length bstr - pos]
 
     @raise Invalid_argument if the string would exceed runtime limits. *)
-val%template to_string : ?pos:int -> ?len:int -> t -> string
-[@@alloc a @ m = (heap_global, stack_local)]
+val to_string : ?pos:int -> ?len:int -> t -> string
 
 (** [to_bytes ?pos ?len bstr]
     @return
@@ -134,7 +132,7 @@ external is_mmapped : (t[@local_opt]) -> bool = "bigstring_is_mmapped_stub"
 
     @raise Invalid_argument if the designated ranges are out of bounds. *)
 
-include Blit.S [@mode read] with type t := t
+include Blit.S with type t := t
 
 val copy : t -> t
 
@@ -148,12 +146,12 @@ module To_string : sig
   val unsafe_blit : (t, bytes) Blit.blit
   [@@deprecated "[since 2017-10] use [Bigstring.To_bytes.unsafe_blit] instead"]
 
-  include Blit.S_to_string [@mode read] with type t := t
+  include Blit.S_to_string with type t := t
 end
 
 module From_string : Blit.S_distinct with type src := string with type dst := t
-module To_bytes : Blit.S_distinct [@mode read] with type src := t with type dst := bytes
-module From_bytes : Blit.S_distinct [@mode read] with type src := bytes with type dst := t
+module To_bytes : Blit.S_distinct with type src := t with type dst := bytes
+module From_bytes : Blit.S_distinct with type src := bytes with type dst := t
 
 (** [memset t ~pos ~len c] fills [t] with [c] within the range [\[pos, pos + len)]. *)
 val memset : t -> pos:int -> len:int -> char -> unit
@@ -397,11 +395,11 @@ module Local : sig
 end
 
 module Int_repr : sig
-  include Int_repr.Get [@mode read] with type t := t
+  include Int_repr.Get with type t := t
   include Int_repr.Set with type t := t
 
   module Unsafe : sig
-    include Int_repr.Get [@mode read] with type t := t
+    include Int_repr.Get with type t := t
     include Int_repr.Set with type t := t
   end
 end

@@ -105,14 +105,14 @@ module Bytes_sequence = struct
   let length = Bytes.length
 end
 
-include%template Blit.Make [@modality portable] [@mode read] (struct
+include Blit.Make (struct
     include Bigstring_sequence
 
     let unsafe_blit = unsafe_blit
   end)
 
-module%template From_bytes =
-  Blit.Make_distinct [@modality portable] [@mode read]
+module From_bytes =
+  Blit.Make_distinct
     (Bytes_sequence)
     (struct
       external unsafe_blit
@@ -128,8 +128,8 @@ module%template From_bytes =
       include Bigstring_sequence
     end)
 
-module%template To_bytes =
-  Blit.Make_distinct [@modality portable] [@mode read]
+module To_bytes =
+  Blit.Make_distinct
     (Bigstring_sequence)
     (struct
       external unsafe_blit
@@ -145,8 +145,8 @@ module%template To_bytes =
       include Bytes_sequence
     end)
 
-module%template From_string =
-  Blit.Make_distinct [@modality portable]
+module From_string =
+  Blit.Make_distinct
     (struct
       type t = string
 
@@ -168,33 +168,14 @@ module%template From_string =
 
 module To_string = struct
   include To_bytes
-
-  include%template
-    Blit.Make_to_string [@modality portable] [@mode read] (Bigstring0) (To_bytes)
+  include Blit.Make_to_string (Bigstring0) (To_bytes)
 end
 
 let of_string = From_string.subo
 let of_bytes = From_bytes.subo
 let to_string = To_string.subo
-
-let to_string__stack ?pos ?len t =
-  let src_pos =
-    match pos with
-    | None -> 0
-    | Some pos -> pos
-  in
-  let len = get_opt_len t ~pos:src_pos len in
-  check_args ~loc:"to_string__stack" ~pos:src_pos ~len t;
-  let bytes = Bytes.create_local len in
-  To_bytes.unsafe_blit ~src:t ~dst:bytes ~len ~src_pos ~dst_pos:0;
-  Bytes.unsafe_to_string ~no_mutation_while_string_reachable:bytes
-;;
-
 let to_bytes = To_bytes.subo
-
-let%template[@alloc a = (heap, stack)] sexp_of_t t =
-  Sexp.Atom ((to_string [@alloc a]) t) [@exclave_if_stack a]
-;;
+let sexp_of_t t = Sexp.Atom (to_string t)
 
 let t_of_sexp : Sexp.t -> t = function
   | Atom str -> of_string str
@@ -319,7 +300,7 @@ external unsafe_strncmp
   = "bigstring_strncmp"
 [@@noalloc]
 
-let compare__local t1 t2 =
+let compare_internal t1 t2 =
   if phys_equal t1 t2
   then 0
   else (
@@ -331,7 +312,7 @@ let compare__local t1 t2 =
     | n -> n)
 ;;
 
-let compare t1 t2 = compare__local t1 t2
+let compare t1 t2 = compare_internal t1 t2
 
 external internalhash_fold_bigstring
   :  Hash.state
@@ -343,7 +324,7 @@ external internalhash_fold_bigstring
 let hash_fold_t = internalhash_fold_bigstring
 let hash t = Ppx_hash_lib.Std.Hash.of_fold hash_fold_t t
 
-let equal__local t1 t2 =
+let equal_internal t1 t2 =
   if phys_equal t1 t2
   then true
   else (
@@ -352,10 +333,9 @@ let equal__local t1 t2 =
     Int.equal len1 len2 && Int.equal (unsafe_memcmp t1 ~pos1:0 t2 ~pos2:0 ~len:len1) 0)
 ;;
 
-let equal t1 t2 = equal__local t1 t2
+let equal t1 t2 = equal_internal t1 t2
 
-type t_frozen = t
-[@@deriving compare ~localize, equal ~localize, globalize, hash, sexp, sexp_grammar]
+type t_frozen = t [@@deriving compare, equal, globalize, hash, sexp, sexp_grammar]
 
 (* Search *)
 
@@ -929,7 +909,7 @@ let set_uint32_be_exn t ~pos n =
 let get_uint32_le t ~pos = uint32_of_int32_t (get_int32_t_le t ~pos)
 let get_uint32_be t ~pos = uint32_of_int32_t (get_int32_t_be t ~pos)
 
-module%template Int_repr = struct
+module Int_repr = struct
   module F = struct
     type t = t_frozen
 
@@ -950,8 +930,8 @@ module%template Int_repr = struct
     end
   end
 
-  include Int_repr.Make_get [@modality portable] [@mode read] (F)
-  include Int_repr.Make_set [@modality portable] (F)
+  include Int_repr.Make_get (F)
+  include Int_repr.Make_set (F)
 
   module Unsafe = struct
     module F = struct
@@ -971,8 +951,8 @@ module%template Int_repr = struct
       end
     end
 
-    include Int_repr.Make_get [@modality portable] [@mode read] (F)
-    include Int_repr.Make_set [@modality portable] (F)
+    include Int_repr.Make_get (F)
+    include Int_repr.Make_set (F)
   end
 end
 
